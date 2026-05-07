@@ -11,9 +11,11 @@
 // Qt
 #include <QDebug>
 #include <QFileInfo>
+#include <QGuiApplication>
 #include <QImage>
 #include <QList>
 #include <QRgb>
+#include <QScreen>
 #include <QtMath>
 #include <QLatin1String>
 
@@ -141,7 +143,16 @@ void BackgroundCache::reload()
             background = returnedBackground.mid(7);
         }
 
+        // Plasma 6 no longer writes [ScreenConnectors] to plasmashellrc, so
+        // m_pool->connector() only resolves id 0 (primary). For other ids,
+        // fall back to QGuiApplication::screens() indexed by lastScreen.
         QString screenName = m_pool->connector(lastScreen);
+        if (screenName.isEmpty()) {
+            QScreen *qscreen = QGuiApplication::screens().value(lastScreen, nullptr);
+            if (qscreen) {
+                screenName = qscreen->name();
+            }
+        }
 
         //! Take case of broadcasted backgrounds, when their plugin is changed they should be disabled
         if (pluginExistsFor(activity,screenName)
@@ -180,9 +191,22 @@ QString BackgroundCache::background(QString activity, QString screen) const
 {
     if (m_backgrounds.contains(activity) && m_backgrounds[activity].contains(screen)) {
         return m_backgrounds[activity][screen];
-    } else {
+    }
+
+    // Plasma 6 only writes a [Wallpaper] section for the primary screen's
+    // desktop containment; secondary screens share the same wallpaper but have
+    // no explicit entry. Fall through from most-specific to least-specific:
+    //   1. Default wallpaper (a well-known fallback image from the theme)
+    //   2. Any screen we know about for this activity (primary screen's path)
+    if (!m_defaultWallpaperPath.isEmpty()) {
         return m_defaultWallpaperPath;
     }
+
+    if (m_backgrounds.contains(activity) && !m_backgrounds[activity].isEmpty()) {
+        return m_backgrounds[activity].constBegin().value();
+    }
+
+    return QString();
 }
 
 bool BackgroundCache::busyFor(QString activity, QString screen, Plasma::Types::Location location)
