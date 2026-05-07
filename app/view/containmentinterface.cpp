@@ -561,6 +561,11 @@ void ContainmentInterface::setLayoutManager(QObject *manager)
 
     m_layoutManager = manager;
 
+    if (!m_layoutManager) {
+        Q_EMIT layoutManagerChanged();
+        return;
+    }
+
     // applets order
     int metaorderindex = m_layoutManager->metaObject()->indexOfProperty("order");
     if (metaorderindex >= 0) {
