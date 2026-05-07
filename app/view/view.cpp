@@ -11,6 +11,7 @@
 #include "effects.h"
 #include "positioner.h"
 #include "visibilitymanager.h"
+#include "../wm/schemecolors.h"
 #include "settings/primaryconfigview.h"
 #include "settings/secondaryconfigview.h"
 #include "settings/viewsettingsfactory.h"
@@ -253,6 +254,16 @@ View::~View()
 
 void View::init(Plasma::Containment *plasma_containment)
 {
+    // Pin the window's color scheme to kdeglobals so every view (original and
+    // clone alike) uses the same application-level palette. Without this, clone
+    // views on secondary screens inherit the Plasma panel theme's dark palette
+    // instead of the system palette, causing symbolic icons (e.g. audio badge)
+    // to render in white even when the dock background is light.
+    const QString defaultScheme = Latte::WindowSystem::SchemeColors::possibleSchemeFile(QStringLiteral("kdeglobals"));
+    if (!defaultScheme.isEmpty()) {
+        setProperty("KDE_COLOR_SCHEME_PATH", defaultScheme);
+    }
+
     connect(this, &QQuickWindow::xChanged, this, &View::geometryChanged);
     connect(this, &QQuickWindow::yChanged, this, &View::geometryChanged);
     connect(this, &QQuickWindow::widthChanged, this, [this](int) { Q_EMIT geometryChanged(); });
@@ -600,6 +611,8 @@ void View::showConfigurationInterface(Plasma::Applet *applet)
 
 void View::showWidgetExplorer(const QPointF &point)
 {
+    Q_UNUSED(point);
+
     auto widgetExplorerView = m_corona->viewSettingsFactory()->widgetExplorerView(this);
 
     if (!widgetExplorerView->isVisible()) {
