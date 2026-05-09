@@ -30,6 +30,30 @@ namespace Containment{
 
 const int LayoutManager::JUSTIFYSPLITTERID;
 
+namespace {
+QList<int> dedupeAppletIdsPreserveSplitters(const QList<int> &ids)
+{
+    QList<int> cleaned;
+    QSet<int> seenAppletIds;
+
+    for (const int id : ids) {
+        if (id <= 0) {
+            cleaned << id;
+            continue;
+        }
+
+        if (seenAppletIds.contains(id)) {
+            continue;
+        }
+
+        seenAppletIds.insert(id);
+        cleaned << id;
+    }
+
+    return cleaned;
+}
+}
+
 LayoutManager::LayoutManager(QObject *parent)
     : QObject(parent)
 {
@@ -357,8 +381,35 @@ QObject *LayoutManager::resolveAppletQuickItemObject(QObject *applet) const
         return nullptr;
     }
 
-    if (qobject_cast<QQuickItem *>(applet)) {
+    if (qobject_cast<PlasmaQuick::AppletQuickItem *>(applet)) {
         return applet;
+    }
+
+    auto resolveFromBackendProperty = [this, applet](const char *propertyName) -> QObject * {
+        QObject *candidate = applet->property(propertyName).value<QObject *>();
+        if (!candidate || candidate == applet) {
+            return nullptr;
+        }
+
+        if (qobject_cast<PlasmaQuick::AppletQuickItem *>(candidate)) {
+            return candidate;
+        }
+
+        if (auto backendApplet = qobject_cast<Plasma::Applet *>(candidate)) {
+            if (QQuickItem *itemForApplet = PlasmaQuick::AppletQuickItem::itemForApplet(backendApplet)) {
+                return itemForApplet;
+            }
+        }
+
+        return resolveAppletQuickItemObject(candidate);
+    };
+
+    if (QObject *resolvedFromApplet = resolveFromBackendProperty("applet")) {
+        return resolvedFromApplet;
+    }
+
+    if (QObject *resolvedFromPlasmoid = resolveFromBackendProperty("plasmoid")) {
+        return resolvedFromPlasmoid;
     }
 
     if (auto plasmaApplet = qobject_cast<Plasma::Applet *>(applet)) {
@@ -369,11 +420,19 @@ QObject *LayoutManager::resolveAppletQuickItemObject(QObject *applet) const
 
     QObject *itemObject = applet->property("item").value<QObject *>();
 
+    if (qobject_cast<PlasmaQuick::AppletQuickItem *>(itemObject)) {
+        return itemObject;
+    }
+
     if (qobject_cast<QQuickItem *>(itemObject)) {
         return itemObject;
     }
 
     QObject *graphicObject = applet->property("_plasma_graphicObject").value<QObject *>();
+
+    if (qobject_cast<PlasmaQuick::AppletQuickItem *>(graphicObject)) {
+        return graphicObject;
+    }
 
     if (qobject_cast<QQuickItem *>(graphicObject)) {
         return graphicObject;
@@ -384,13 +443,30 @@ QObject *LayoutManager::resolveAppletQuickItemObject(QObject *applet) const
         QVariant appletVariant;
         appletVariant.setValue(applet);
 
-        const bool foundFromContainment =
-            QMetaObject::invokeMethod(m_plasmoid, "itemFor", Q_RETURN_ARG(QObject *, itemForResult), Q_ARG(QObject *, applet))
-            || QMetaObject::invokeMethod(m_plasmoid, "itemFor", Q_RETURN_ARG(QObject *, itemForResult), Q_ARG(QVariant, appletVariant));
+        const QMetaObject *metaObject = m_plasmoid->metaObject();
+        const bool hasItemForQObject = metaObject->indexOfMethod("itemFor(QObject*)") >= 0;
+        const bool hasItemForVariant = metaObject->indexOfMethod("itemFor(QVariant)") >= 0;
+        bool foundFromContainment{false};
+
+        if (hasItemForQObject) {
+            foundFromContainment = QMetaObject::invokeMethod(m_plasmoid, "itemFor",
+                                                             Q_RETURN_ARG(QObject *, itemForResult),
+                                                             Q_ARG(QObject *, applet));
+        }
+
+        if (!foundFromContainment && hasItemForVariant) {
+            foundFromContainment = QMetaObject::invokeMethod(m_plasmoid, "itemFor",
+                                                             Q_RETURN_ARG(QObject *, itemForResult),
+                                                             Q_ARG(QVariant, appletVariant));
+        }
 
         if (foundFromContainment && itemForResult) {
             graphicObject = itemForResult;
         }
+    }
+
+    if (qobject_cast<PlasmaQuick::AppletQuickItem *>(graphicObject)) {
+        return graphicObject;
     }
 
     if (qobject_cast<QQuickItem *>(graphicObject)) {
@@ -400,6 +476,19 @@ QObject *LayoutManager::resolveAppletQuickItemObject(QObject *applet) const
     if (auto plasmaApplet = qobject_cast<Plasma::Applet *>(applet)) {
         if (QQuickItem *itemForApplet = PlasmaQuick::AppletQuickItem::itemForApplet(plasmaApplet)) {
             return itemForApplet;
+        }
+    }
+
+    if (auto quickItem = qobject_cast<QQuickItem *>(applet)) {
+        Q_UNUSED(quickItem);
+        const QMetaObject *metaObject = applet->metaObject();
+        const bool hasAppletIfaceProperties = metaObject->indexOfProperty("applet") >= 0
+                                              || metaObject->indexOfProperty("plasmoid") >= 0
+                                              || metaObject->indexOfProperty("pluginName") >= 0
+                                              || metaObject->indexOfProperty("status") >= 0;
+
+        if (hasAppletIfaceProperties) {
+            return applet;
         }
     }
 
@@ -457,19 +546,22 @@ QList<QObject *> LayoutManager::plasmoidApplets() const
             return nullptr;
         }
 
-        if (qobject_cast<QQuickItem *>(item)) {
-            return item;
-        }
-
         if (auto quickItem = qobject_cast<PlasmaQuick::AppletQuickItem *>(item)) {
             return quickItem;
+        }
+
+        if (auto backendApplet = qobject_cast<Plasma::Applet *>(item)) {
+            if (QObject *resolved = resolveAppletQuickItemObject(backendApplet)) {
+                return resolved;
+            }
+            return nullptr;
         }
 
         if (QObject *resolved = resolveAppletQuickItemObject(item)) {
             return resolved;
         }
 
-        return item;
+        return nullptr;
     };
 
     qDebug() << "org.kde.latte ::: collecting applets from m_plasmoid property(\"applets\")";
@@ -514,27 +606,54 @@ int LayoutManager::appletId(QObject *applet) const
         return -1;
     }
 
-    const int directId = applet->property("id").toInt();
-    if (directId > 0) {
-        return directId;
-    }
+    QSet<const QObject *> visited;
+    QList<QObject *> queue{applet};
 
-    if (auto quickItem = qobject_cast<PlasmaQuick::AppletQuickItem *>(applet)) {
-        if (quickItem->applet()) {
-            return quickItem->applet()->id();
+    while (!queue.isEmpty()) {
+        QObject *candidate = queue.takeLast();
+
+        if (!candidate || visited.contains(candidate)) {
+            continue;
+        }
+
+        visited.insert(candidate);
+
+        if (auto plasmaApplet = qobject_cast<Plasma::Applet *>(candidate)) {
+            return plasmaApplet->id();
+        }
+
+        if (auto quickItem = qobject_cast<PlasmaQuick::AppletQuickItem *>(candidate)) {
+            if (quickItem->applet()) {
+                return quickItem->applet()->id();
+            }
+        }
+
+        bool idOk{false};
+        const int directId = candidate->property("id").toInt(&idOk);
+        if (idOk && directId > 0) {
+            return directId;
+        }
+
+        const char *backendProps[] = {
+            "backendAppletRef",
+            "applet",
+            "plasmoid",
+            "_plasma_applet",
+            "_plasmoid",
+            "item",
+            "_plasma_graphicObject",
+            "graphicObject"
+        };
+
+        for (const char *propName : backendProps) {
+            QObject *relatedObject = candidate->property(propName).value<QObject *>();
+            if (relatedObject && relatedObject != candidate && !visited.contains(relatedObject)) {
+                queue << relatedObject;
+            }
         }
     }
 
-    if (auto plasmaApplet = qobject_cast<Plasma::Applet *>(applet)) {
-        return plasmaApplet->id();
-    }
-
-    QObject *backendApplet = applet->property("applet").value<QObject *>();
-    if (backendApplet && backendApplet != applet) {
-        return appletId(backendApplet);
-    }
-
-    return directId;
+    return -1;
 }
 
 int LayoutManager::configuredAppletCount() const
@@ -603,6 +722,15 @@ void LayoutManager::restore()
     }
 
     QList<int> appletIdsOrder = toIntList(readConfigValue("appletOrder", QString()).toString());
+    const QList<int> dedupedStoredAppletOrder = dedupeAppletIdsPreserveSplitters(appletIdsOrder);
+
+    if (dedupedStoredAppletOrder != appletIdsOrder) {
+        qDebug() << "org.kde.latte ::: duplicate applet ids in appletOrder were removed:" << appletIdsOrder
+                 << " -> " << dedupedStoredAppletOrder;
+        appletIdsOrder = dedupedStoredAppletOrder;
+        writeConfigValue("appletOrder", toStr(appletIdsOrder));
+    }
+
     QList<QObject *> applets = plasmoidApplets();
     const int expectedAppletCount = qMax(appletIdsOrder.count(), configuredAppletCount());
 
@@ -667,6 +795,11 @@ void LayoutManager::restore()
     //! remove invalid applets from the ids order
     for (int i=0; i<invalidApplets.count(); ++i) {
         appletIdsOrder.removeAll(invalidApplets[i]);
+    }
+
+    const QList<int> dedupedAppletIdsOrder = dedupeAppletIdsPreserveSplitters(appletIdsOrder);
+    if (dedupedAppletIdsOrder != appletIdsOrder) {
+        appletIdsOrder = dedupedAppletIdsOrder;
     }
 
     //! order valid applets based on the cleaned applet ids order
@@ -867,18 +1000,22 @@ void LayoutManager::save()
             bool isInternalSplitter = item->property("isInternalViewSplitter").toBool();
             bool isParabolicEdgeSpacer = item->property("isParabolicEdgeSpacer").toBool();
             if (!isInternalSplitter && !isParabolicEdgeSpacer) {
-                QVariant appletVariant = item->property("applet");
-                if (!appletVariant.isValid()) {
-                    continue;
+                QObject *backendApplet = item->property("backendAppletRef").value<QObject *>();
+                int id = appletId(backendApplet);
+
+                if (id <= 0) {
+                    QVariant appletVariant = item->property("applet");
+                    if (!appletVariant.isValid()) {
+                        continue;
+                    }
+
+                    QObject *applet = appletVariant.value<QObject *>();
+                    if (!applet) {
+                        continue;
+                    }
+
+                    id = appletId(applet);
                 }
-
-                QObject *applet = appletVariant.value<QObject *>();
-
-                if (!applet) {
-                    continue;
-                }
-
-                const int id = appletId(applet);
 
                 if (id > 0) {
                     childCount++;
@@ -892,6 +1029,14 @@ void LayoutManager::save()
     int startChilds = collectLayoutAppletIds(m_startLayout, appletIds);
     int mainChilds  = collectLayoutAppletIds(m_mainLayout,  appletIds);
     int endChilds   = collectLayoutAppletIds(m_endLayout,   appletIds);
+    Q_UNUSED(endChilds);
+
+    const QList<int> dedupedAppletIds = dedupeAppletIdsPreserveSplitters(appletIds);
+    if (dedupedAppletIds != appletIds) {
+        qDebug() << "org.kde.latte ::: duplicate applet ids found while saving appletOrder, cleaned:"
+                 << appletIds << " -> " << dedupedAppletIds;
+        appletIds = dedupedAppletIds;
+    }
 
     Latte::Types::Alignment alignment = static_cast<Latte::Types::Alignment>(readConfigValue("alignment", (int)Latte::Types::Center).toInt());
 
@@ -1402,6 +1547,38 @@ void LayoutManager::insertAtCoordinates(QQuickItem *item, const int &x, const in
     }
 }
 
+void LayoutManager::repairAppletContainers()
+{
+    if (!m_startLayout || !m_mainLayout || !m_endLayout || !m_rootItem || !m_plasmoid) {
+        return;
+    }
+
+    QList<QObject *> applets = plasmoidApplets();
+
+    if (applets.isEmpty()) {
+        return;
+    }
+
+    for (QObject *applet : applets) {
+        const int id = appletId(applet);
+
+        if (id <= 0) {
+            continue;
+        }
+
+        if (appletItem(id)) {
+            continue;
+        }
+
+        int preferredIndex = m_order.indexOf(id);
+        if (preferredIndex < 0) {
+            preferredIndex = m_order.count();
+        }
+
+        addAppletItem(applet, preferredIndex);
+    }
+}
+
 void LayoutManager::cleanupOptions()
 {
     auto inlockedzoomcurrent = m_lockedZoomApplets;
@@ -1570,14 +1747,11 @@ void LayoutManager::destroyAppletContainer(QObject *applet)
         return;
     }
 
-    Plasma::Applet *ca = qobject_cast<Plasma::Applet *>(applet);
-
-    if (!ca) {
-        qDebug() << "org.kde.destroy destroying applet could not succeed Plasma/Applet was not identified...";
+    const int id = appletId(applet);
+    if (id <= 0) {
+        qDebug() << "org.kde.latte ::: destroying applet could not succeed, applet id unresolved";
         return;
     }
-
-    int id = ca->id();
 
     bool destroyed{false};
 
@@ -1606,13 +1780,15 @@ void LayoutManager::destroyAppletContainer(QObject *applet)
                         continue;
                     }
 
-                    QVariant appletVariant = item->property("applet");
-                    if (!appletVariant.isValid()) {
-                        continue;
+                    int itemAppletId = appletId(item->property("backendAppletRef").value<QObject *>());
+                    if (itemAppletId <= 0) {
+                        QVariant appletVariant = item->property("applet");
+                        if (appletVariant.isValid()) {
+                            itemAppletId = appletId(appletVariant.value<QObject *>());
+                        }
                     }
-                    PlasmaQuick::AppletQuickItem *appletitem = appletVariant.value<PlasmaQuick::AppletQuickItem *>();
 
-                    if (appletitem && appletitem->applet() == applet) {
+                    if (itemAppletId == id) {
                         item->setVisible(false);
                         item->setParentItem(m_rootItem);
                         item->deleteLater();

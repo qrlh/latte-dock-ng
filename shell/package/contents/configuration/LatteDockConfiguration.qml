@@ -30,8 +30,15 @@ Loader {
 
     sourceComponent: FocusScope {
         id: dialog
+        Kirigami.Theme.inherit: false
+        Kirigami.Theme.colorSet: Kirigami.Theme.Window
         width: appliedWidth
         height: appliedHeight
+        readonly property var theme: Kirigami.Theme
+        SystemPalette {
+            id: systemPalette
+            colorGroup: SystemPalette.Active
+        }
 
         // Plasma 5 provided 'units' as a global context property; Plasma 6
         // removed it — expose Kirigami.Units under the same name so all
@@ -63,7 +70,7 @@ Loader {
 
         //! propose size based on font size
         property int proposedWidth: 0.82 * proposedHeight + units.smallSpacing * 2
-        property int proposedHeight: 36 * theme.mSize(theme.defaultFont).height
+        property int proposedHeight: 36 * Kirigami.Units.gridUnit
 
         //! chosen size to be applied, if the user has set or not a different scale for the settings window
         property int chosenWidth: userScaleWidth !== 1 ? userScaleWidth * proposedWidth : proposedWidth
@@ -90,13 +97,13 @@ Loader {
         LayoutMirroring.enabled: Qt.application.layoutDirection === Qt.RightToLeft
         LayoutMirroring.childrenInherit: true
 
-        readonly property bool viewIsPanel: latteView.type === LatteCore.Types.PanelView
+        readonly property bool viewIsPanel: latteView.type === LatteCore.types.PanelView
 
         property bool panelIsVertical: plasmoid.formFactor === PlasmaCore.Types.Vertical
         property int subGroupSpacing: units.largeSpacing + units.smallSpacing * 1.5
 
-        property color bC: theme.backgroundColor
-        property color tC: theme.textColor
+        property color bC: systemPalette.window
+        property color tC: systemPalette.windowText
         property color transparentBackgroundColor: Qt.rgba(bC.r, bC.g, bC.b, 0.7)
         property color borderColor: Qt.rgba(tC.r, tC.g, tC.b, 0.12)
 
@@ -105,13 +112,14 @@ Loader {
         onAdvancedLevelChanged: {
             //! switch to appearancePage when effectsPage becomes hidden because
             //! advancedLevel was disabled by the user
-            if (!advancedLevel && tabBar.currentTab === effectsTabBtn) {
-                tabBar.currentTab = appearanceTabBtn;
+            if (!advancedLevel && pagesStackView.currentItem === effectsPage) {
+                tabBar.currentIndex = 1;
             }
         }
 
         Component.onCompleted: {
             updateScales();
+            viewConfig.updateEffects();
         }
 
         Connections {
@@ -124,20 +132,24 @@ Loader {
             userScaleHeight = universalSettings.screenHeightScale(latteView.positioner.currentScreenName);
         }
 
-        KSvg.FrameSvgItem{
-            id: backgroundFrameSvgItem
+        Rectangle {
             anchors.fill: parent
-            imagePath: "dialogs/background"
-            enabledBorders: viewConfig.enabledBorders
-
-            onEnabledBordersChanged: viewConfig.updateEffects()
-            Component.onCompleted: viewConfig.updateEffects()
-
-            LatteExtraControls.DragCorner {
-                id: dragCorner
-            }
+            color: dialog.bC
+            border.color: dialog.borderColor
+            border.width: 1
+            radius: Math.max(4, units.smallSpacing)
         }
 
+        LatteExtraControls.DragCorner {
+            id: dragCorner
+        }
+
+        Connections {
+            target: viewConfig
+            function onEnabledBordersChanged() {
+                viewConfig.updateEffects();
+            }
+        }
         PlasmaComponents.Label{
             anchors.top: parent.top
             anchors.horizontalCenter: parent.horizontalCenter
@@ -249,15 +261,15 @@ Loader {
                             //! it must remain or be changed
                             text: i18nc("advanced settings", "Advanced")
 
-                            readonly property real textColorBrightness: colorBrightness(theme.textColor)
+                            readonly property real textColorBrightness: colorBrightness(dialog.tC)
                             readonly property real basicOpacity: textColorBrightness > 127 ? 0.7 : 0.3
 
                             color: {
                                 if (dialog.basicLevel) {
-                                    return textColorBrightness > 127 ? Qt.darker(theme.textColor, 1.4) : Qt.lighter(theme.textColor, 2.8);
+                                    return textColorBrightness > 127 ? Qt.darker(dialog.tC, 1.4) : Qt.lighter(dialog.tC, 2.8);
                                 }
 
-                                return theme.textColor;
+                                return dialog.tC;
                             }
 
                             function colorBrightness(color) {
@@ -305,9 +317,16 @@ Loader {
                     id: behaviorTabBtn
                     text: i18n("Behavior")
                     onCheckedChanged: {
-                        if (checked && pagesStackView.currentItem !== behaviorPage) {
-                            pagesStackView.forwardSliding = true;
-                            pagesStackView.replace(pagesStackView.currentItem, behaviorPage);
+                        var stack = pagesStackView;
+                        if (!checked || !stack) {
+                            return;
+                        }
+
+                        if (stack.currentItem && stack.currentItem !== behaviorPage) {
+                            stack.forwardSliding = true;
+                            stack.replace(stack.currentItem, behaviorPage);
+                        } else if (!stack.currentItem) {
+                            stack.push(behaviorPage);
                         }
                     }
 
@@ -315,7 +334,7 @@ Loader {
                         target: viewConfig
                         function onIsReadyChanged() {
                             if (viewConfig.isReady) {
-                                tabBar.currentTab = behaviorTabBtn;
+                                tabBar.currentIndex = 0;
                             }
                         }
                     }
@@ -325,9 +344,16 @@ Loader {
                     id: appearanceTabBtn
                     text: i18n("Appearance")
                     onCheckedChanged: {
-                        if (checked && pagesStackView.currentItem !== appearancePage) {
-                            pagesStackView.forwardSliding = (pagesStackView.currentItem.pageIndex > 1);
-                            pagesStackView.replace(pagesStackView.currentItem, appearancePage);
+                        var stack = pagesStackView;
+                        if (!checked || !stack) {
+                            return;
+                        }
+
+                        if (stack.currentItem && stack.currentItem !== appearancePage) {
+                            stack.forwardSliding = (stack.currentItem.pageIndex > 1);
+                            stack.replace(stack.currentItem, appearancePage);
+                        } else if (!stack.currentItem) {
+                            stack.push(appearancePage);
                         }
                     }
                 }
@@ -337,9 +363,16 @@ Loader {
                     visible: dialog.advancedLevel
 
                     onCheckedChanged: {
-                        if (checked && pagesStackView.currentItem !== effectsPage) {
-                            pagesStackView.forwardSliding = (pagesStackView.currentItem.pageIndex > 2);
-                            pagesStackView.replace(pagesStackView.currentItem, effectsPage);
+                        var stack = pagesStackView;
+                        if (!checked || !stack) {
+                            return;
+                        }
+
+                        if (stack.currentItem && stack.currentItem !== effectsPage) {
+                            stack.forwardSliding = (stack.currentItem.pageIndex > 2);
+                            stack.replace(stack.currentItem, effectsPage);
+                        } else if (!stack.currentItem) {
+                            stack.push(effectsPage);
                         }
                     }
                 }
@@ -351,9 +384,17 @@ Loader {
                     PlasmaComponents.TabButton {
                         text: index >= 1 ? i18nc("tasks header and index","Tasks <%1>", index+1) : i18n("Tasks")
                         onCheckedChanged: {
-                            if (checked && pagesStackView.currentItem !== tasksRepeater.itemAt(index)) {
-                                pagesStackView.forwardSliding = (pagesStackView.currentItem.pageIndex > (tabBar.visibleStaticPages + index));
-                                pagesStackView.replace(pagesStackView.currentItem, tasksRepeater.itemAt(index));
+                            var stack = pagesStackView;
+                            var targetItem = tasksRepeater.itemAt(index);
+                            if (!checked || !stack || !targetItem) {
+                                return;
+                            }
+
+                            if (stack.currentItem && stack.currentItem !== targetItem) {
+                                stack.forwardSliding = (stack.currentItem.pageIndex > (tabBar.visibleStaticPages + index));
+                                stack.replace(stack.currentItem, targetItem);
+                            } else if (!stack.currentItem) {
+                                stack.push(targetItem);
                             }
                         }
                     }
@@ -384,7 +425,7 @@ Loader {
                     anchors.rightMargin: -2*units.smallSpacing
 
                     height: parent.height // dialog.height - (header.height + tabBar.height + units.smallSpacing * 1.5) + 2
-                    color: theme.backgroundColor
+                    color: dialog.bC
                     border.width: 1
                     border.color: dialog.borderColor
                 }
@@ -398,8 +439,8 @@ Loader {
 
                     QtQuickControls212.StackView {
                         id: pagesStackView
-                        width: currentItem.width
-                        height: currentItem.height
+                        width: currentItem ? currentItem.width : pagesBackground.width
+                        height: currentItem ? currentItem.height : pagesBackground.height
 
                         property bool forwardSliding: true
 
@@ -603,7 +644,7 @@ Loader {
                         for (var i=0; i<actionsModel.count; ++i) {
                             var item = actionsModel.get(i);
                             if (item.actionId === "duplicate:") {
-                                var duplicateText = latteView.type === LatteCore.Types.DockView ? i18n("Duplicate Dock") : i18n("Duplicate Panel")
+                                var duplicateText = latteView.type === LatteCore.types.DockView ? i18n("Duplicate Dock") : i18n("Duplicate Panel")
                                 item.name = duplicateText;
                                 break;
                             }
