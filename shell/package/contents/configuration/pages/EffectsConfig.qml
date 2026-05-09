@@ -418,10 +418,8 @@ PlasmaComponents.Page {
                             text: i18nc("latte indicator style", "Latte")
                             readonly property string type: "org.kde.latte.default"
 
-                            onCheckedChanged: {
-                                if (checked) {
-                                    latteView.indicator.type = type;
-                                }
+                            onClicked: {
+                                latteView.indicator.type = type;
                             }
                         }
                         PlasmaComponents.TabButton {
@@ -429,20 +427,16 @@ PlasmaComponents.Page {
                             text: i18nc("plasma indicator style", "Plasma")
                             readonly property string type: "org.kde.latte.plasma"
 
-                            onCheckedChanged: {
-                                if (checked) {
-                                    latteView.indicator.type = type;
-                                }
+                            onClicked: {
+                                latteView.indicator.type = type;
                             }
                         }
 
                         PlasmaComponents.TabButton {
                             id: customBtn
 
-                            onCheckedChanged: {
-                                if (checked) {
-                                    customIndicator.onButtonIsPressed();
-                                }
+                            onClicked: {
+                                customIndicator.onButtonIsPressed();
                             }
 
                             LatteExtraControls.CustomIndicatorButton {

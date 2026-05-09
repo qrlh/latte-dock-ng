@@ -16,8 +16,20 @@ import org.kde.latte.components 1.0 as LatteComponents
 ColumnLayout {
     id: root
     Layout.fillWidth: true
-    Kirigami.Theme.inherit: true
+    Kirigami.Theme.inherit: false
     Kirigami.Theme.colorSet: Kirigami.Theme.Window
+    SystemPalette {
+        id: systemPalette
+        colorGroup: SystemPalette.Active
+    }
+    readonly property color cfgBackgroundColor: (typeof dialog !== "undefined" && dialog && dialog.bC !== undefined) ? dialog.bC : systemPalette.window
+    readonly property color cfgTextColor: (typeof dialog !== "undefined" && dialog && dialog.tC !== undefined) ? dialog.tC : systemPalette.windowText
+    readonly property color cfgHighlightColor: (typeof dialog !== "undefined" && dialog && dialog.hC !== undefined) ? dialog.hC : ((typeof dialog !== "undefined" && dialog && dialog.theme && dialog.theme.highlightColor !== undefined) ? dialog.theme.highlightColor : systemPalette.highlight)
+    readonly property color cfgHighlightedTextColor: (typeof dialog !== "undefined" && dialog && dialog.htC !== undefined) ? dialog.htC : ((typeof dialog !== "undefined" && dialog && dialog.theme && dialog.theme.highlightedTextColor !== undefined) ? dialog.theme.highlightedTextColor : systemPalette.highlightedText)
+    Kirigami.Theme.backgroundColor: cfgBackgroundColor
+    Kirigami.Theme.textColor: cfgTextColor
+    Kirigami.Theme.highlightColor: cfgHighlightColor
+    Kirigami.Theme.highlightedTextColor: cfgHighlightedTextColor
 
     readonly property var units: Kirigami.Units
     readonly property bool hasIndicatorConfig: (typeof indicator !== "undefined") && indicator && indicator.configuration

@@ -12,14 +12,42 @@ import org.kde.plasma.core 2.0 as PlasmaCore
 Item {
     id: uiManager
     visible: false
+    Kirigami.Theme.inherit: false
+    Kirigami.Theme.colorSet: Kirigami.Theme.Window
+
+    SystemPalette {
+        id: systemPalette
+        colorGroup: SystemPalette.Active
+    }
+
+    readonly property color cfgBackgroundColor: (typeof dialog !== "undefined" && dialog && dialog.bC !== undefined) ? dialog.bC : systemPalette.window
+    readonly property color cfgTextColor: (typeof dialog !== "undefined" && dialog && dialog.tC !== undefined) ? dialog.tC : systemPalette.windowText
+    readonly property color cfgHighlightColor: (typeof dialog !== "undefined" && dialog && dialog.theme && dialog.theme.highlightColor !== undefined) ? dialog.theme.highlightColor : systemPalette.highlight
+    readonly property color cfgHighlightedTextColor: (typeof dialog !== "undefined" && dialog && dialog.theme && dialog.theme.highlightedTextColor !== undefined) ? dialog.theme.highlightedTextColor : systemPalette.highlightedText
+
+    Kirigami.Theme.backgroundColor: cfgBackgroundColor
+    Kirigami.Theme.textColor: cfgTextColor
+    Kirigami.Theme.highlightColor: cfgHighlightColor
+    Kirigami.Theme.highlightedTextColor: cfgHighlightedTextColor
+
 
     property Item stackView: null
 
     Item {
         id: hiddenIndicatorPage
         anchors.fill: parent
+        // Expose configuration dialog palette to dynamically loaded indicator
+        // config pages via the "dialog" context property set from C++.
+        property color bC: uiManager.cfgBackgroundColor
+        property color tC: uiManager.cfgTextColor
+        property color hC: uiManager.cfgHighlightColor
+        property color htC: uiManager.cfgHighlightedTextColor
         Kirigami.Theme.inherit: false
         Kirigami.Theme.colorSet: Kirigami.Theme.Window
+        Kirigami.Theme.backgroundColor: uiManager.cfgBackgroundColor
+        Kirigami.Theme.textColor: uiManager.cfgTextColor
+        Kirigami.Theme.highlightColor: uiManager.cfgHighlightColor
+        Kirigami.Theme.highlightedTextColor: uiManager.cfgHighlightedTextColor
 
         readonly property int optionsWidth: dialog.optionsWidth
         readonly property bool deprecatedOptionsAreHidden: true // @since 0.10.0
@@ -110,6 +138,10 @@ Item {
             width: stackView.width
             Kirigami.Theme.inherit: false
             Kirigami.Theme.colorSet: Kirigami.Theme.Window
+            Kirigami.Theme.backgroundColor: uiManager.cfgBackgroundColor
+            Kirigami.Theme.textColor: uiManager.cfgTextColor
+            Kirigami.Theme.highlightColor: uiManager.cfgHighlightColor
+            Kirigami.Theme.highlightedTextColor: uiManager.cfgHighlightedTextColor
 
             readonly property bool isCurrent: latteView.indicator.type === type && viewConfig.isReady/*update flag*/
             readonly property bool deprecatedOptionsAreHidden: true // @since 0.10.0
@@ -123,6 +155,10 @@ Item {
             width: stackView.width
             Kirigami.Theme.inherit: false
             Kirigami.Theme.colorSet: Kirigami.Theme.Window
+            Kirigami.Theme.backgroundColor: uiManager.cfgBackgroundColor
+            Kirigami.Theme.textColor: uiManager.cfgTextColor
+            Kirigami.Theme.highlightColor: uiManager.cfgHighlightColor
+            Kirigami.Theme.highlightedTextColor: uiManager.cfgHighlightedTextColor
 
             readonly property bool isCurrent: latteView.indicator.type === type && viewConfig.isReady/*update flag*/
             readonly property bool deprecatedOptionsAreHidden: true // @since 0.10.0
@@ -136,6 +172,10 @@ Item {
             width: stackView.width
             Kirigami.Theme.inherit: false
             Kirigami.Theme.colorSet: Kirigami.Theme.Window
+            Kirigami.Theme.backgroundColor: uiManager.cfgBackgroundColor
+            Kirigami.Theme.textColor: uiManager.cfgTextColor
+            Kirigami.Theme.highlightColor: uiManager.cfgHighlightColor
+            Kirigami.Theme.highlightedTextColor: uiManager.cfgHighlightedTextColor
 
             readonly property bool isCurrent: latteView.indicator.type === type && viewConfig.isReady/*update flag*/
             readonly property bool deprecatedOptionsAreHidden: true // @since 0.10.0
