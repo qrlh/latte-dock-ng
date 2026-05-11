@@ -67,7 +67,7 @@ void ViewsHandler::init()
 
     //! New Button
     m_newViewAction = new QAction(i18nc("new view", "&New"), this);
-    m_newViewAction->setToolTip(i18n("New dock or panel"));
+    m_newViewAction->setToolTip(i18n("New dock"));
     m_newViewAction->setIcon(QIcon::fromTheme("add"));
     m_newViewAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_N));
     connectActionWithButton(m_ui->newBtn, m_newViewAction);
@@ -80,8 +80,8 @@ void ViewsHandler::init()
     connect(corona()->templatesManager(), &Latte::Templates::Manager::viewTemplatesChanged, this, &ViewsHandler::initViewTemplatesSubMenu);
 
     //! Duplicate Button
-    m_duplicateViewAction = new QAction(i18nc("duplicate dock or panel", "&Duplicate"), this);
-    m_duplicateViewAction->setToolTip(i18n("Duplicate selected dock or panel"));
+    m_duplicateViewAction = new QAction(i18nc("duplicate dock", "&Duplicate"), this);
+    m_duplicateViewAction->setToolTip(i18n("Duplicate selected dock"));
     m_duplicateViewAction->setIcon(QIcon::fromTheme("edit-copy"));
     m_duplicateViewAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_D));
     connectActionWithButton(m_ui->duplicateBtn, m_duplicateViewAction);
@@ -97,8 +97,8 @@ void ViewsHandler::init()
     m_ui->removeBtn->addAction(m_removeViewAction); //this is needed in order to be triggered properly
 
     //! Import
-    m_importViewAction =new QAction(i18nc("import dock/panel","&Import..."));
-    m_duplicateViewAction->setToolTip(i18n("Import dock or panel from local file"));
+    m_importViewAction =new QAction(i18nc("import dock","&Import..."));
+    m_importViewAction->setToolTip(i18n("Import dock from local file"));
     m_importViewAction->setIcon(QIcon::fromTheme("document-import"));
     m_importViewAction->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_I));
     connectActionWithButton(m_ui->importBtn, m_importViewAction);
@@ -106,7 +106,7 @@ void ViewsHandler::init()
 
     //! Export
     m_exportViewAction = new QAction(i18nc("export layout", "&Export"), this);
-    m_exportViewAction->setToolTip(i18n("Export selected dock or panel at your system"));
+    m_exportViewAction->setToolTip(i18n("Export selected dock at your system"));
     m_exportViewAction->setIcon(QIcon::fromTheme("document-export"));
     m_exportViewAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_E));
     connectActionWithButton(m_ui->exportBtn, m_exportViewAction);
@@ -302,7 +302,7 @@ void ViewsHandler::newView(const Data::Generic &templateData)
         viewfromtemplate.name = templateData.name;
         Data::View newview = m_viewsController->appendViewFromViewTemplate(viewfromtemplate);
 
-        showInlineMessage(i18nc("settings:dock/panel added successfully","<b>%1</b> added successfully...", newview.name),
+        showInlineMessage(i18nc("settings:dock added successfully","<b>%1</b> added successfully...", newview.name),
                           KMessageWidget::Positive);
     }
 }
@@ -325,7 +325,7 @@ void ViewsHandler::exportViewForBackup()
     }
 
     if (m_viewsController->selectedViewsCount() > 1) {
-        showInlineMessage(i18n("<b>Export</b> functionality is supported only for one dock or panel each time."),
+        showInlineMessage(i18n("<b>Export</b> functionality is supported only for one dock each time."),
                           KMessageWidget::Warning,
                           false);
         return;
@@ -339,7 +339,7 @@ void ViewsHandler::exportViewForBackup()
 
     QString temporiginfile = storedView(views[0].id);
 
-    QFileDialog *exportFileDialog = new QFileDialog(m_dialog, i18n("Export Dock/Panel For Backup"), QDir::homePath(), QStringLiteral("view.latte"));
+    QFileDialog *exportFileDialog = new QFileDialog(m_dialog, i18n("Export Dock For Backup"), QDir::homePath(), QStringLiteral("view.latte"));
 
     exportFileDialog->setLabelText(QFileDialog::Accept, i18nc("export view","Export"));
     exportFileDialog->setFileMode(QFileDialog::AnyFile);
@@ -347,7 +347,7 @@ void ViewsHandler::exportViewForBackup()
     exportFileDialog->setDefaultSuffix("view.latte");
 
     QStringList filters;
-    QString filter1(i18nc("export view", "Latte Dock NG/Panel file v0.2") + "(*.view.latte)");
+    QString filter1(i18nc("export view", "Latte Dock NG file v0.2") + "(*.view.latte)");
 
     filters << filter1;
 
@@ -404,7 +404,7 @@ void ViewsHandler::exportViewAsTemplate()
     }
 
     if (m_viewsController->selectedViewsCount() > 1) {
-        showInlineMessage(i18n("<b>Export</b> functionality is supported only for one dock or panel each time."),
+        showInlineMessage(i18n("<b>Export</b> functionality is supported only for one dock each time."),
                           KMessageWidget::Warning,
                           false);
         return;
@@ -428,7 +428,7 @@ void ViewsHandler::importView()
 {
     qDebug() << Q_FUNC_INFO;
 
-    QFileDialog *importFileDialog = new QFileDialog(m_dialog, i18nc("import dock/panel", "Import Dock/Panel"), QDir::homePath(), QStringLiteral("view.latte"));
+    QFileDialog *importFileDialog = new QFileDialog(m_dialog, i18nc("import dock", "Import Dock"), QDir::homePath(), QStringLiteral("view.latte"));
 
     importFileDialog->setWindowIcon(QIcon::fromTheme("document-import"));
     importFileDialog->setLabelText(QFileDialog::Accept, i18n("Import"));
@@ -437,7 +437,7 @@ void ViewsHandler::importView()
     importFileDialog->setDefaultSuffix("view.latte");
 
     QStringList filters;
-    filters << QString(i18nc("import dock panel", "Latte Dock NG or Panel file v0.2") + "(*.view.latte)");
+    filters << QString(i18nc("import dock", "Latte Dock NG file v0.2") + "(*.view.latte)");
     importFileDialog->setNameFilters(filters);
 
     connect(importFileDialog, &QFileDialog::finished, importFileDialog, &QFileDialog::deleteLater);
@@ -508,8 +508,8 @@ void ViewsHandler::onSelectionChanged()
 
 void ViewsHandler::updateWindowTitle()
 {
-    m_dialog->setWindowTitle(i18nc("<layout name> Docks/Panels",
-                                   "%1 Docks/Panels",
+    m_dialog->setWindowTitle(i18nc("<layout name> Docks",
+                                   "%1 Docks",
                                    m_ui->layoutsCmb->currentText()));
 }
 
@@ -521,8 +521,8 @@ KMessageBox::ButtonCode ViewsHandler::removalConfirmation(const int &viewsCount)
 
     if (hasChangedData() && viewsCount>0) {
         return KMessageBox::questionTwoActions(m_dialog,
-                                         i18np("You are going to <b>remove 1</b> dock or panel completely from your layout.<br/>Would you like to continue?",
-                                               "You are going to <b>remove %1</b> docks and panels completely from your layout.<br/>Would you like to continue?",
+                                         i18np("You are going to <b>remove 1</b> dock completely from your layout.<br/>Would you like to continue?",
+                                               "You are going to <b>remove %1</b> docks completely from your layout.<br/>Would you like to continue?",
                                                viewsCount),
                                          i18n("Approve Removal"),
                                          KGuiItem(i18n("Remove"), QStringLiteral("edit-delete")),

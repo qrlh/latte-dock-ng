@@ -52,7 +52,20 @@ void CheckBox::paint(QPainter *painter, const QStyleOptionViewItem &option, cons
     bool isChanged = (originalChecked != currentChecked);
 
     if (isChanged) {
-        adjustedOption.font.setPointSize(adjustedOption.font.pointSize() + 2);
+        const qreal pointSize = adjustedOption.font.pointSizeF();
+        if (pointSize > 0) {
+            adjustedOption.font.setPointSizeF(pointSize + 2.0);
+        } else {
+            int pixelSize = adjustedOption.font.pixelSize();
+            if (pixelSize <= 0) {
+                pixelSize = QApplication::font().pixelSize();
+            }
+
+            if (pixelSize > 0) {
+                adjustedOption.font.setPixelSize(pixelSize + 2);
+            }
+        }
+
         adjustedOption.font.setBold(true);
     } else {
         // normal appearance

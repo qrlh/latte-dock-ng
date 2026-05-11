@@ -7,7 +7,6 @@ import QtQuick 2.7
 
 import org.kde.plasma.plasmoid 2.0
 
-import org.kde.latte.core 0.2 as LatteCore
 import org.kde.latte.abilities.client 0.1 as AbilityClient
 
 import "abilities" as Ability
@@ -42,21 +41,6 @@ AbilityClient.AppletAbilities {
         target: _abilityContainer.launchers
         function onDisabledIsStealingDroppedLaunchers() {
             plasmoid.configuration.isPreferredForDroppedLaunchers = false;
-        }
-    }
-
-    Connections {
-        target: _abilityContainer.userRequests
-        function onSglViewType() {
-            if (viewType === LatteCore.types.DockView) {
-                plasmoid.configuration.animationLauncherBouncing = true;
-                plasmoid.configuration.animationWindowInAttention = true;
-                plasmoid.configuration.animationWindowAddedInGroup = true;
-            } else if (viewType === LatteCore.types.PanelView) {
-                plasmoid.configuration.animationLauncherBouncing = false;
-                plasmoid.configuration.animationWindowInAttention = false;
-                plasmoid.configuration.animationWindowAddedInGroup = false;
-            }
         }
     }
 }

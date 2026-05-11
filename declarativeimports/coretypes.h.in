@@ -23,8 +23,7 @@ public:
 
     enum ViewType
     {
-        DockView = 0,
-        PanelView
+        DockView = 0
     };
     Q_ENUM(ViewType);
 

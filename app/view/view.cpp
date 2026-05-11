@@ -13,7 +13,6 @@
 #include "visibilitymanager.h"
 #include "../wm/schemecolors.h"
 #include "settings/primaryconfigview.h"
-#include "settings/secondaryconfigview.h"
 #include "settings/viewsettingsfactory.h"
 #include "settings/widgetexplorerview.h"
 #include "../apptypes.h"
@@ -136,19 +135,6 @@ View::View(Plasma::Corona *corona, QScreen *targetScreen)
 
             connect(m_visibility, &ViewPart::VisibilityManager::containsMouseChanged,
                     this, &View::updateTransientWindowsTracking);
-
-            //! Deprecated because with Plasma 5.19.3 the issue does not appear.
-            //! The issue was that when FrameExtents where zero strange behaviors were
-            //! occurring from KWin, e.g. the panels were moving outside of screen and
-            //! panel external shadows were positioned out of place.
-            /*connect(m_visibility, &ViewPart::VisibilityManager::frameExtentsCleared, this, [&]() {
-                if (behaveAsPlasmaPanel()) {
-                    //! recreate view because otherwise compositor frame extents implementation
-                    //! is triggering a crazy behavior of moving/hiding the view and freezing Latte
-                    //! in some cases.
-                    //reloadSource();
-                }
-            });*/
 
             Q_EMIT visibilityChanged();
         }
@@ -294,7 +280,7 @@ void View::init(Plasma::Containment *plasma_containment)
     });
 
     connect(this, &View::alignmentChanged, this, [&](){
-        // inform neighbour vertical docks/panels to adjust their positioning
+        // inform neighbour vertical docks to adjust their positioning
         if (m_inDelete || formFactor() == Plasma::Types::Vertical) {
             return;
         }
@@ -673,20 +659,6 @@ void View::updateAbsoluteGeometry(bool bypassChecks)
     absGeometry.moveLeft(x() + m_localGeometry.x());
     absGeometry.moveTop(y() + m_localGeometry.y());
 
-    if (behaveAsPlasmaPanel()) {
-        int currentScreenEdgeMargin = m_screenEdgeMarginEnabled ? qMax(0, m_screenEdgeMargin) : 0;
-
-        if (location() == Plasma::Types::BottomEdge) {
-            absGeometry.moveTop(screenGeometry().bottom() - currentScreenEdgeMargin - m_normalThickness);
-        } else if (location() == Plasma::Types::TopEdge) {
-            absGeometry.moveTop(screenGeometry().top() + currentScreenEdgeMargin);
-        } else if (location() == Plasma::Types::LeftEdge) {
-            absGeometry.moveLeft(screenGeometry().left() + currentScreenEdgeMargin);
-        } else if (location() == Plasma::Types::RightEdge) {
-            absGeometry.moveLeft(screenGeometry().right() - currentScreenEdgeMargin - m_normalThickness);
-        }
-    }
-
     if (m_absoluteGeometry == absGeometry && !bypassChecks) {
         return;
     }
@@ -886,30 +858,9 @@ void View::setHeadThicknessGap(int thickness)
     Q_EMIT headThicknessGapChanged();
 }
 
-bool View::behaveAsPlasmaPanel() const
-{
-    return m_behaveAsPlasmaPanel;
-}
-
-void View::setBehaveAsPlasmaPanel(bool behavior)
-{
-    if (m_behaveAsPlasmaPanel == behavior) {
-        return;
-    }
-
-    m_behaveAsPlasmaPanel = behavior;
-
-    Q_EMIT behaveAsPlasmaPanelChanged();
-}
-
 bool View::inEditMode() const
 {
     return containment() && containment()->isUserConfiguring();
-}
-
-bool View::isFloatingPanel() const
-{
-    return m_behaveAsPlasmaPanel && m_screenEdgeMarginEnabled && (m_screenEdgeMargin>0);
 }
 
 bool View::isPreferredForShortcuts() const
@@ -1020,9 +971,7 @@ int View::editThickness() const
     int ruler_height{m_fontPixelSize};
     int header_height{m_fontPixelSize + 2*smallspacing};
 
-    int edgeThickness = behaveAsPlasmaPanel() && screenEdgeMarginEnabled() ? m_screenEdgeMargin : 0;
-
-    return edgeThickness + m_maxNormalThickness + ruler_height + header_height + 6*smallspacing;
+    return m_maxNormalThickness + ruler_height + header_height + 6*smallspacing;
 }
 
 int View::maxThickness() const

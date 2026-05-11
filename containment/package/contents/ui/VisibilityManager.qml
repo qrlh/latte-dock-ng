@@ -11,7 +11,6 @@ import org.kde.plasma.core 2.0 as PlasmaCore
 import org.kde.plasma.plasmoid 2.0
 
 import org.kde.latte.core 0.2 as LatteCore
-import org.kde.latte.private.containment 0.1 as LatteContainment
 
 Item{
     id: manager
@@ -19,8 +18,7 @@ Item{
 
     property QtObject window
 
-    property bool isFloatingInClientSide: !root.behaveAsPlasmaPanel
-                                          && screenEdgeMarginEnabled
+    property bool isFloatingInClientSide: screenEdgeMarginEnabled
                                           && !root.floatingInternalGapIsForced
                                           && !inSlidingIn
                                           && !inSlidingOut
@@ -28,7 +26,7 @@ Item{
     property int animationSpeed: LatteCore.WindowSystem.compositingActive ?
                                      (root.editMode ? 400 : animations.speedFactor.current * 1.62 * animations.duration.large) : 0
 
-    property bool inClientSideScreenEdgeSliding: root.behaveAsDockWithMask && hideThickScreenGap
+    property bool inClientSideScreenEdgeSliding: hideThickScreenGap
     property bool inNormalState: ((animations.needBothAxis.count === 0) && (animations.needLength.count === 0))
                                  || (latteView && latteView.visibility.isHidden && !latteView.visibility.containsMouse && animations.needThickness.count === 0)
     property bool inRelocationAnimation: latteView && latteView.positioner && latteView.positioner.inRelocationAnimation
@@ -43,19 +41,9 @@ Item{
     property int length: root.isVertical ?  Screen.height : Screen.width   //screenGeometry.height : screenGeometry.width
 
     property int slidingOutToPos: {
-        if (root.behaveAsPlasmaPanel) {
-            var edgeMargin = screenEdgeMarginEnabled ? plasmoid.configuration.screenEdgeMargin : 0
-            var thickmarg = latteView.visibility.isSidebar ? 0 : 1;
-
-            return root.isHorizontal ? root.height + edgeMargin - thickmarg : root.width + edgeMargin - thickmarg;
-        } else {
-            var topOrLeftEdge = ((plasmoid.location===PlasmaCore.Types.LeftEdge)||(plasmoid.location===PlasmaCore.Types.TopEdge));
-            return (topOrLeftEdge ? -metrics.mask.thickness.normal : metrics.mask.thickness.normal);
-        }
+        var topOrLeftEdge = ((plasmoid.location===PlasmaCore.Types.LeftEdge)||(plasmoid.location===PlasmaCore.Types.TopEdge));
+        return (topOrLeftEdge ? -metrics.mask.thickness.normal : metrics.mask.thickness.normal);
     }
-
-    //! when Latte behaves as Plasma panel
-    property int thicknessAsPanel: metrics.totals.thickness
 
     property Item layouts: null
 
@@ -274,9 +262,6 @@ Item{
             return;
         }
 
-        var localX = 0;
-        var localY = 0;
-
         // debug maskArea criteria
         if (debug.maskEnabled) {
             console.log(animations.needBothAxis.count + ", " + animations.needLength.count + ", " +
@@ -294,44 +279,42 @@ Item{
 
             //the shadows size must be removed from the maskArea
             //before updating the localDockGeometry
-            if (!latteView.behaveAsPlasmaPanel) {
-                var cleanThickness = metrics.totals.thickness;
-                var edgeMargin = metrics.mask.screenEdge;
+            var cleanThickness = metrics.totals.thickness;
+            var edgeMargin = metrics.mask.screenEdge;
 
-                if (plasmoid.location === PlasmaCore.Types.TopEdge) {
-                    localGeometry.x = latteView.effects.rect.x; // from effects area
-                    localGeometry.width = latteView.effects.rect.width; // from effects area
+            if (plasmoid.location === PlasmaCore.Types.TopEdge) {
+                localGeometry.x = latteView.effects.rect.x; // from effects area
+                localGeometry.width = latteView.effects.rect.width; // from effects area
 
-                    localGeometry.y = edgeMargin;
-                    localGeometry.height = cleanThickness;
-                } else if (plasmoid.location === PlasmaCore.Types.BottomEdge) {
-                    localGeometry.x = latteView.effects.rect.x; // from effects area
-                    localGeometry.width = latteView.effects.rect.width; // from effects area
+                localGeometry.y = edgeMargin;
+                localGeometry.height = cleanThickness;
+            } else if (plasmoid.location === PlasmaCore.Types.BottomEdge) {
+                localGeometry.x = latteView.effects.rect.x; // from effects area
+                localGeometry.width = latteView.effects.rect.width; // from effects area
 
-                    localGeometry.y = root.height - cleanThickness - edgeMargin;
-                    localGeometry.height = cleanThickness;
-                } else if (plasmoid.location === PlasmaCore.Types.LeftEdge) {
-                    localGeometry.y = latteView.effects.rect.y; // from effects area
-                    localGeometry.height = latteView.effects.rect.height; // from effects area
+                localGeometry.y = root.height - cleanThickness - edgeMargin;
+                localGeometry.height = cleanThickness;
+            } else if (plasmoid.location === PlasmaCore.Types.LeftEdge) {
+                localGeometry.y = latteView.effects.rect.y; // from effects area
+                localGeometry.height = latteView.effects.rect.height; // from effects area
 
-                    localGeometry.x = edgeMargin;
-                    localGeometry.width = cleanThickness;
-                } else if (plasmoid.location === PlasmaCore.Types.RightEdge) {
-                    localGeometry.y = latteView.effects.rect.y; // from effects area
-                    localGeometry.height = latteView.effects.rect.height; // from effects area
+                localGeometry.x = edgeMargin;
+                localGeometry.width = cleanThickness;
+            } else if (plasmoid.location === PlasmaCore.Types.RightEdge) {
+                localGeometry.y = latteView.effects.rect.y; // from effects area
+                localGeometry.height = latteView.effects.rect.height; // from effects area
 
-                    localGeometry.x = root.width - cleanThickness - edgeMargin;
-                    localGeometry.width = cleanThickness;
-                }
-
-                //set the boundaries for latteView local geometry
-                //qBound = qMax(min, qMin(value, max)).
-
-                localGeometry.x = Math.max(0, Math.min(localGeometry.x, latteView.width));
-                localGeometry.y = Math.max(0, Math.min(localGeometry.y, latteView.height));
-                localGeometry.width = Math.min(localGeometry.width, latteView.width);
-                localGeometry.height = Math.min(localGeometry.height, latteView.height);
+                localGeometry.x = root.width - cleanThickness - edgeMargin;
+                localGeometry.width = cleanThickness;
             }
+
+            //set the boundaries for latteView local geometry
+            //qBound = qMax(min, qMin(value, max)).
+
+            localGeometry.x = Math.max(0, Math.min(localGeometry.x, latteView.width));
+            localGeometry.y = Math.max(0, Math.min(localGeometry.y, latteView.height));
+            localGeometry.width = Math.min(localGeometry.width, latteView.width);
+            localGeometry.height = Math.min(localGeometry.height, latteView.height);
 
             //console.log("update geometry ::: "+localGeometry);
             latteView.localGeometry = localGeometry;
@@ -352,11 +335,10 @@ Item{
         // by specifying inputThickness when ParabolicEffect is applied. (inputThickness->animated scenario)
         var animated = (animations.needBothAxis.count>0);
 
-        if (!LatteCore.WindowSystem.compositingActive || latteView.behaveAsPlasmaPanel) {
+        if (!LatteCore.WindowSystem.compositingActive) {
             //! clear input mask
             latteView.effects.inputMask = Qt.rect(0, 0, -1, -1);
         } else {
-            var floatingInternalGapAcceptsInput = behaveAsDockWithMask && floatingInternalGapIsForced;
             var inputThickness;
 
             if (latteView.visibility.isHidden) {
@@ -458,13 +440,9 @@ Item{
         id: slidingAnimationAutoHiddenOut
 
         PropertyAnimation {
-            target: !root.behaveAsPlasmaPanel ? layoutsContainer : latteView.positioner
-            property: !root.behaveAsPlasmaPanel ? (root.isVertical ? "x" : "y") : "slideOffset"
+            target: layoutsContainer
+            property: root.isVertical ? "x" : "y"
             to: {
-                if (root.behaveAsPlasmaPanel) {
-                    return slidingOutToPos;
-                }
-
                 if (LatteCore.WindowSystem.compositingActive) {
                     return slidingOutToPos;
                 } else {
@@ -486,11 +464,6 @@ Item{
                 }
 
                 latteView.visibility.isHidden = true;
-
-                if (root.behaveAsPlasmaPanel && latteView.positioner.slideOffset !== 0) {
-                    //! hide real panels when they slide-out
-                    latteView.visibility.hide();
-                }
             }
         }
 
@@ -539,18 +512,11 @@ Item{
         }
 
         PropertyAnimation {
-            target: !root.behaveAsPlasmaPanel ? layoutsContainer : latteView.positioner
-            property: !root.behaveAsPlasmaPanel ? (root.isVertical ? "x" : "y") : "slideOffset"
+            target: layoutsContainer
+            property: root.isVertical ? "x" : "y"
             to: 0
             duration: manager.animationSpeed
             easing.type: Easing.OutQuad
-        }
-
-        ScriptAction{
-            script: {
-                // deprecated
-                // root.inStartup = false;
-            }
         }
 
         onStarted: {
@@ -564,11 +530,6 @@ Item{
 
         onStopped: {
             inSlidingIn = false;
-
-            if (manager.inRelocationHiding) {
-                manager.inRelocationHiding = false;
-                autosize.updateIconSize();
-            }
 
             manager.inRelocationHiding = false;
             autosize.updateIconSize();
@@ -601,79 +562,5 @@ Item{
             start();
         }
     }
-
-    //! Slides Animations for FLOATING+BEHAVEASPLASMAPANEL when
-    //! HIDETHICKSCREENCAP dynamically is enabled/disabled
-    SequentialAnimation{
-        id: slidingInRealFloating
-
-        PropertyAnimation {
-            target: latteView ? latteView.positioner : null
-            property: "slideOffset"
-            to: 0
-            duration: manager.animationSpeed
-            easing.type: Easing.OutQuad
-        }
-
-        ScriptAction{
-            script: {
-                latteView.positioner.inSlideAnimation = false;
-            }
-        }
-
-        onStopped: latteView.positioner.inSlideAnimation = false;
-
-    }
-
-    SequentialAnimation{
-        id: slidingOutRealFloating
-
-        ScriptAction{
-            script: {
-                latteView.positioner.inSlideAnimation = true;
-            }
-        }
-
-        PropertyAnimation {
-            target: latteView ? latteView.positioner : null
-            property: "slideOffset"
-            to: plasmoid.configuration.screenEdgeMargin
-            duration: manager.animationSpeed
-            easing.type: Easing.InQuad
-        }
-    }
-
-    Connections {
-        target: root
-        function onHideThickScreenGapChanged() {
-            if (!latteView || !root.viewIsAvailable) {
-                return;
-            }
-
-            if (root.behaveAsPlasmaPanel && !latteView.visibility.isHidden && !inSlidingIn && !inSlidingOut && !inStartup) {
-                slideInOutRealFloating();
-            }
-        }
-
-        function onInStartupChanged() {
-            //! used for positioning properly real floating panels when there is a maximized window
-            if (root.hideThickScreenGap && !inStartup && latteView.positioner.slideOffset===0) {
-                if (root.behaveAsPlasmaPanel && !latteView.visibility.isHidden) {
-                    slideInOutRealFloating();
-                }
-            }
-        }
-
-        function slideInOutRealFloating() {
-            if (root.hideThickScreenGap) {
-                slidingInRealFloating.stop();
-                slidingOutRealFloating.start();
-            } else {
-                slidingOutRealFloating.stop();
-                slidingInRealFloating.start();
-            }
-        }
-    }
-
 
 }

@@ -123,7 +123,7 @@ void OriginalView::createClone(int screenId)
     }
 
     Data::View nextdata = templateviews[0];
-    nextdata.name = i18nc("clone of original dock panel, name","Clone of %1", name());
+    nextdata.name = i18nc("clone of original dock, name","Clone of %1", name());
     nextdata.onPrimary = false;
     nextdata.screensGroup = Latte::Types::SingleScreenGroup;
     nextdata.isClonedFrom = containment()->id();

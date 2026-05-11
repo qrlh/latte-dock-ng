@@ -31,7 +31,7 @@ ViewsDialog::ViewsDialog(SettingsDialog *parent, Controller::Layouts *controller
 
     //! Button Group
     m_applyNowBtn = new QPushButton(QIcon::fromTheme("dialog-yes"), i18n("Apply Now"), m_ui->buttonBox);
-    m_applyNowBtn->setToolTip(i18n("Apply all dock, panels changes now"));
+    m_applyNowBtn->setToolTip(i18n("Apply all dock changes now"));
     m_ui->buttonBox->addButton(m_applyNowBtn, QDialogButtonBox::ApplyRole);
 
     //! Signals/Slots

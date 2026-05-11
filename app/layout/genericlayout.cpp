@@ -949,7 +949,7 @@ void GenericLayout::addView(Plasma::Containment *containment)
     latteView->setContainment(containment);
     latteView->setLayout(this);
 
-    //! Keep explicit show call so copied docks/panels become visible after cloning.
+    //! Keep explicit show call so copied docks become visible after cloning.
     latteView->show();
 
     Q_EMIT viewsCountChanged();

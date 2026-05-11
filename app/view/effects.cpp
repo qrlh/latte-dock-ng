@@ -53,16 +53,9 @@ void Effects::init()
     connect(this, &Effects::unitedMaskRegionsChanged, this, &Effects::updateMask);
     connect(m_view, &QQuickWindow::widthChanged, this, &Effects::updateMask);
     connect(m_view, &QQuickWindow::heightChanged, this, &Effects::updateMask);
-    connect(m_view, &Latte::View::behaveAsPlasmaPanelChanged, this, &Effects::updateMask);
     // On Wayland compositing is always active; the non-compositing mask fallback is not needed.
 
     connect(this, &Effects::backgroundRadiusChanged, this, &Effects::updateBackgroundCorners);
-
-    connect(this, &Effects::drawShadowsChanged, this, [&]() {
-        if (m_view->behaveAsPlasmaPanel()) {
-            updateEnabledBorders();
-        }
-    });
 
     connect(this, &Effects::backgroundAllCornersChanged, this, &Effects::updateEnabledBorders);
 
@@ -72,9 +65,7 @@ void Effects::init()
     connect(m_view, &Latte::View::maxLengthChanged, this, &Effects::updateEnabledBorders);
     connect(m_view, &Latte::View::offsetChanged, this, &Effects::updateEnabledBorders);
     connect(m_view, &Latte::View::screenEdgeMarginEnabledChanged, this, &Effects::updateEnabledBorders);
-    connect(m_view, &Latte::View::behaveAsPlasmaPanelChanged, this, &Effects::updateEffects);
     connect(this, &Effects::drawShadowsChanged, this, &Effects::updateShadows);
-    connect(m_view, &Latte::View::behaveAsPlasmaPanelChanged, this, &Effects::updateShadows);
     connect(m_view, &Latte::View::configWindowGeometryChanged, this, &Effects::updateMask);
     connect(m_view, &Latte::View::layoutChanged, this, &Effects::onPopUpMarginChanged);
 
@@ -455,11 +446,7 @@ void Effects::clearShadows()
 
 void Effects::updateShadows()
 {
-    if (m_view->behaveAsPlasmaPanel() && drawShadows()) {
-        PanelShadows::self()->addWindow(m_view, enabledBorders());
-    } else {
-        PanelShadows::self()->removeWindow(m_view);
-    }
+    PanelShadows::self()->removeWindow(m_view);
 }
 
 void Effects::updateEffects()
@@ -472,68 +459,54 @@ void Effects::updateEffects()
     bool clearEffects{true};
 
     if (m_drawEffects) {
-        if (!m_view->behaveAsPlasmaPanel()) {
-            if (!m_rect.isNull() && !m_rect.isEmpty() && m_rect != VisibilityManager::ISHIDDENMASK) {
-                QRegion backMask;
+        if (!m_rect.isNull() && !m_rect.isEmpty() && m_rect != VisibilityManager::ISHIDDENMASK) {
+            QRegion backMask;
 
-                if (m_backgroundRadiusEnabled) {
-                    //! CustomBackground way
-                    backMask = customMask(QRect(0,0,m_rect.width(), m_rect.height()));
-                } else {
-                    //! Plasma::Theme way
-                    //! this is used when compositing is disabled and provides
-                    //! the correct way for the mask to be painted in order for
-                    //! rounded corners to be shown correctly
-                    if (!m_panelBackgroundSvg) {
-                        return;
-                    }
-
-                    if (m_rect == VisibilityManager::ISHIDDENMASK) {
-                        clearEffects = true;
-                    } else {
-                        const QVariant maskProperty = m_panelBackgroundSvg->property("mask");
-                        if (maskProperty.metaType().id() == QMetaType::QRegion) {
-                            backMask = maskProperty.value<QRegion>();
-                        }
-                    }
+            if (m_backgroundRadiusEnabled) {
+                //! CustomBackground way
+                backMask = customMask(QRect(0,0,m_rect.width(), m_rect.height()));
+            } else {
+                //! Plasma::Theme way
+                //! this is used when compositing is disabled and provides
+                //! the correct way for the mask to be painted in order for
+                //! rounded corners to be shown correctly
+                if (!m_panelBackgroundSvg) {
+                    return;
                 }
 
-                //! adjust mask coordinates based on local coordinates
-                int fX = m_rect.x(); int fY = m_rect.y();
-
-                //! There are cases that mask is NULL even though it should not
-                //! Example: SidebarOnDemand from v0.10 that BEHAVEASPLASMAPANEL in EditMode
-                //! switching multiple times between inConfigureAppletsMode and LiveEditMode
-                //! is such a case
-                QRegion fixedMask;
-
-                if (!backMask.isNull()) {
-                    fixedMask = backMask;
-                    fixedMask.translate(fX, fY);
+                if (m_rect == VisibilityManager::ISHIDDENMASK) {
+                    clearEffects = true;
                 } else {
-                    fixedMask = QRect(fX, fY, m_rect.width(), m_rect.height());
-                }
-
-                if (!fixedMask.isEmpty()) {
-                    clearEffects = false;
-                    KWindowEffects::enableBlurBehind(m_view, true, fixedMask);
-                    KWindowEffects::enableBackgroundContrast(m_view,
-                                                             m_theme.backgroundContrastEnabled(),
-                                                             m_backEffectContrast,
-                                                             m_backEffectIntesity,
-                                                             m_backEffectSaturation,
-                                                             fixedMask);
+                    const QVariant maskProperty = m_panelBackgroundSvg->property("mask");
+                    if (maskProperty.metaType().id() == QMetaType::QRegion) {
+                        backMask = maskProperty.value<QRegion>();
+                    }
                 }
             }
-        } else {
-            //!  BEHAVEASPLASMAPANEL case
-            clearEffects = false;
-            KWindowEffects::enableBlurBehind(m_view, true);
-            KWindowEffects::enableBackgroundContrast(m_view,
-                                                     m_theme.backgroundContrastEnabled(),
-                                                     m_backEffectContrast,
-                                                     m_backEffectIntesity,
-                                                     m_backEffectSaturation);
+
+            //! adjust mask coordinates based on local coordinates
+            int fX = m_rect.x(); int fY = m_rect.y();
+
+            //! There are cases that mask is NULL even though it should not.
+            QRegion fixedMask;
+
+            if (!backMask.isNull()) {
+                fixedMask = backMask;
+                fixedMask.translate(fX, fY);
+            } else {
+                fixedMask = QRect(fX, fY, m_rect.width(), m_rect.height());
+            }
+
+            if (!fixedMask.isEmpty()) {
+                clearEffects = false;
+                KWindowEffects::enableBlurBehind(m_view, true, fixedMask);
+                KWindowEffects::enableBackgroundContrast(m_view,
+                                                         m_theme.backgroundContrastEnabled(),
+                                                         m_backEffectContrast,
+                                                         m_backEffectIntesity,
+                                                         m_backEffectSaturation,
+                                                         fixedMask);
+            }
         }
     }
 
@@ -667,11 +640,7 @@ void Effects::updateEnabledBorders()
         Q_EMIT enabledBordersChanged();
     }
 
-    if (!m_view->behaveAsPlasmaPanel() || !m_drawShadows) {
-        PanelShadows::self()->removeWindow(m_view);
-    } else {
-        PanelShadows::self()->setEnabledBorders(m_view, borders);
-    }
+    PanelShadows::self()->removeWindow(m_view);
 }
 //!END draw panel shadows outside the dock window
 

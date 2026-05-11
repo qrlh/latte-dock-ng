@@ -317,7 +317,7 @@ void Views::pasteSelectedViews()
     }
 
     if (hascurrentlayoutcuttedviews) {
-        m_handler->showInlineMessage(i18n("Docks and panels from <b>Paste</b> action are already present in current layout"),
+        m_handler->showInlineMessage(i18n("Docks from <b>Paste</b> action are already present in current layout"),
                                      KMessageWidget::Warning);
     }
 }
@@ -805,7 +805,7 @@ void Views::messageForWarningOrphanedSubContainments(const Data::Warning &warnin
 
     //! construct message
     QString message = i18nc("warning id and title", "<b>Warning #%1: %2</b> <br/><br/>", warning.id, warning.name);
-    message += i18n("In your layout there are orphaned subcontainments that are not used by any dock or panel. Such situation is not dangerous but it is advised to remove them in order to reduce memory usage.<br/>");
+    message += i18n("In your layout there are orphaned subcontainments that are not used by any dock. Such situation is not dangerous but it is advised to remove them in order to reduce memory usage.<br/>");
 
     message += "<br/>";
     message += i18n("<b>Orphaned Subcontainments:</b><br/>");

@@ -49,45 +49,10 @@ ContainmentItem {
     readonly property bool kirigamiLibraryIsFound: true
 
     property bool backgroundOnlyOnMaximized: plasmoid.configuration.backgroundOnlyOnMaximized
-    readonly property bool behaveAsPlasmaPanel: viewType === LatteCore.types.PanelView
-    readonly property bool behaveAsDockWithMask: !behaveAsPlasmaPanel
 
     readonly property bool viewIsAvailable: latteView && latteView.visibility && latteView.effects
 
-    property int viewType: {
-        if (!latteView || !latteView.visibility) {
-            return LatteCore.types.DockView;
-        }
-
-        if (screenEdgeMarginEnabled && root.floatingInternalGapIsForced) {
-            //! dont use when floating views are requesting internal floating gap which is in client side
-            return LatteCore.types.DockView;
-        }
-
-        return viewTypeInQuestion;
-    }
-
-    property int viewTypeInQuestion: {
-        //! viewType as chosen before considering other options such as floating internal gap enforcement.
-        //! It helps with binding loops
-        if (!latteView || !latteView.visibility) {
-            return LatteCore.types.DockView;
-        }
-
-        if (background.customShadowedRectangleIsEnabled) {
-            return LatteCore.types.DockView;
-        }
-
-        var staticLayout = (plasmoid.configuration.minLength === plasmoid.configuration.maxLength);
-
-        if ((plasmoid.configuration.alignment === LatteCore.types.Justify || staticLayout)
-                && background.isGreaterThanItemThickness
-                && (parabolic.factor.maxZoom === 1.0)) {
-            return LatteCore.types.PanelView;
-        }
-
-        return LatteCore.types.DockView;
-    }
+    // Latte Dock NG intentionally supports only dock-style views.
 
     property bool blurEnabled: plasmoid.configuration.blurEnabled && (!forceTransparentPanel || forcePanelForBusyBackground)
 
@@ -106,7 +71,7 @@ ContainmentItem {
     property bool dockContainsMouse: latteView && latteView.visibility ? latteView.visibility.containsMouse : false
 
     property bool disablePanelShadowMaximized: plasmoid.configuration.disablePanelShadowForMaximized && LatteCore.WindowSystem.compositingActive
-    property bool drawShadowsExternal: panelShadowsActive && behaveAsPlasmaPanel
+    property bool drawShadowsExternal: false
 
     property bool editMode: plasmoid.userConfiguring
     property bool windowIsTouching: latteView && latteView.windowsTracker
@@ -119,7 +84,7 @@ ContainmentItem {
     property bool hasFloatingGapInputEventsDisabled: root.screenEdgeMarginEnabled
                                                      && !root.inConfigureAppletsMode
                                                      && !parabolic.isEnabled
-                                                     && (root.behaveAsPlasmaPanel || (root.behaveAsDockWithMask && !root.floatingInternalGapIsForced))
+                                                     && !root.floatingInternalGapIsForced
 
     property bool forceSolidPanel: (latteView && latteView.visibility
                                     && LatteCore.WindowSystem.compositingActive
@@ -179,7 +144,14 @@ ContainmentItem {
     property bool inFullJustify: (plasmoid.configuration.alignment === LatteCore.types.Justify) && (maxLengthPerCentage===100)
     property bool inStartup: true
 
-    property bool isHorizontal: plasmoid.formFactor === PlasmaCore.Types.Horizontal
+    // Use edge location as the source of truth during relocation; formFactor can
+    // be temporarily stale while the view is moving between edges.
+    readonly property bool _edgeIsVertical: plasmoid.location === PlasmaCore.Types.LeftEdge
+                                            || plasmoid.location === PlasmaCore.Types.RightEdge
+    readonly property bool _edgeIsHorizontal: plasmoid.location === PlasmaCore.Types.TopEdge
+                                              || plasmoid.location === PlasmaCore.Types.BottomEdge
+    property bool isHorizontal: _edgeIsHorizontal ? true
+                                                  : (_edgeIsVertical ? false : (plasmoid.formFactor === PlasmaCore.Types.Horizontal))
     property bool isVertical: !isHorizontal
 
     property bool mouseWheelActions: plasmoid.configuration.mouseWheelActions
@@ -207,15 +179,14 @@ ContainmentItem {
         }
 
         if (root.isHorizontal) {
-            return behaveAsPlasmaPanel && LatteCore.WindowSystem.compositingActive ? width : width * (minLengthPerCentage/100)
+            return width * (minLengthPerCentage/100)
         } else {
-            return behaveAsPlasmaPanel && LatteCore.WindowSystem.compositingActive ? height : height * (minLengthPerCentage/100)
+            return height * (minLengthPerCentage/100)
         }
     }
 
     property int maxLength: {
-        const maximize = behaveAsPlasmaPanel
-          || (maximizeWhenMaximized && latteView.windowsTracker.currentScreen.existsWindowMaximized);
+        const maximize = maximizeWhenMaximized && latteView.windowsTracker.currentScreen.existsWindowMaximized;
         if (root.isHorizontal) {
             return maximize ? width : width * (maxLengthPerCentage/100)
         } else {
@@ -269,14 +240,10 @@ ContainmentItem {
     }
 
     property int offset: {
-        if (behaveAsPlasmaPanel) {
-            return 0;
-        }
-
         if (root.isHorizontal) {
             return width * (plasmoid.configuration.offset/100);
         } else {
-            height * (plasmoid.configuration.offset/100)
+            return height * (plasmoid.configuration.offset/100)
         }
     }
 
@@ -393,13 +360,11 @@ ContainmentItem {
     }
 
     //! Binding is needed in order for hideLengthScreenGaps to be activated or not only after
-    //! View sliding in/out has finished. This way the animation is smoother for behaveAsPlasmaPanels
+    //! View sliding in/out has finished. This way the animation is smoother.
     Binding{
         target: root
         property: "hideLengthScreenGaps"
         when: latteView && latteView.positioner && latteView.visibility
-              && ((root.behaveAsPlasmaPanel && latteView.positioner.slideOffset === 0)
-                  || root.behaveAsDockWithMask)
               && !(plasmoid.configuration.floatingGapHidingWaitsMouse && dockContainsMouse)
         value: (hideThickScreenGap
                 && (latteView.visibility.mode === LatteCore.types.AlwaysVisible
@@ -486,6 +451,7 @@ ContainmentItem {
             if (latteView.positioner) {
                 latteView.positioner.hidingForRelocationStarted.connect(visibilityManager.slotHideDockDuringLocationChange);
                 latteView.positioner.showingAfterRelocationFinished.connect(visibilityManager.slotShowDockAfterLocationChange);
+                repairAppletContainersTimer.restart();
             }
         }
 
@@ -495,6 +461,23 @@ ContainmentItem {
                 latteView.visibility.onMustBeHide.connect(visibilityManager.slotMustBeHide);
                 latteView.visibility.onMustBeShown.connect(visibilityManager.slotMustBeShown);
             }
+        }
+    }
+
+    Connections {
+        target: plasmoid
+        function onLocationChanged() {
+            repairAppletContainersTimer.restart();
+        }
+        function onFormFactorChanged() {
+            repairAppletContainersTimer.restart();
+        }
+    }
+
+    Connections {
+        target: latteView && latteView.positioner ? latteView.positioner : null
+        function onShowingAfterRelocationFinished() {
+            repairAppletContainersTimer.restart();
         }
     }
 
@@ -586,6 +569,8 @@ ContainmentItem {
         } else {
             fastLayoutManager.addAppletItem(applet, x, y);
         }
+
+        runtimeAppletRepairTimer.schedule();
     }
 
     Containment.onAppletRemoved: function(applet) { fastLayoutManager.removeAppletItem(applet); }
@@ -610,6 +595,9 @@ ContainmentItem {
     //////////////START OF FUNCTIONS
     function createAppletItem(applet) {
         var appletContainer = appletItemComponent.createObject(dndSpacer.parent);
+        appletContainer.backendAppletRef = applet;
+        appletContainer.sourceAppletPluginName = appletPluginName(applet);
+
         if (!initAppletContainer(appletContainer, applet)) {
             // The applet's QML graphic object may not be ready yet at startup.
             // Defer with a Timer and retry; if it still fails after a few
@@ -624,9 +612,9 @@ ContainmentItem {
                     retryTimer.stop();
                     retryTimer.destroy();
                     appletContainer.visible = Qt.binding(function() {
-                        return (appletContainer.applet && appletContainer.applet.status !== PlasmaCore.Types.HiddenStatus || (!plasmoid.immutable && root.inConfigureAppletsMode)) && !appletContainer.isHidden;
+                        return appletContainerShouldBeVisible(appletContainer);
                     });
-                } else if (retryCount >= 20) { // ~1s
+                } else if (retryCount >= 80) { // ~4s
                     retryTimer.stop();
                     retryTimer.destroy();
                     appletContainer.destroy();
@@ -638,9 +626,51 @@ ContainmentItem {
 
         // don't show applet if it chooses to be hidden but still make it  accessible in the panelcontroller
         appletContainer.visible = Qt.binding(function() {
-            return (appletContainer.applet && appletContainer.applet.status !== PlasmaCore.Types.HiddenStatus || (!plasmoid.immutable && root.inConfigureAppletsMode)) && !appletContainer.isHidden;
+            return appletContainerShouldBeVisible(appletContainer);
         });
         return appletContainer;
+    }
+
+    function appletContainerShouldBeVisible(appletContainer) {
+        return ((appletContainer.applet
+                 && (appletContainer.applet.status !== PlasmaCore.Types.HiddenStatus
+                     || appletContainer.keepVisibleOnHiddenStatus))
+                || (!plasmoid.immutable && root.inConfigureAppletsMode))
+                && !appletContainer.isHidden;
+    }
+
+    function appletPluginName(applet) {
+        if (!applet) {
+            return "";
+        }
+
+        var directName = (applet.pluginName !== undefined && applet.pluginName !== null) ? String(applet.pluginName) : "";
+        if (directName !== "") {
+            return directName;
+        }
+
+        if (applet.metaData !== undefined && applet.metaData && applet.metaData.pluginId !== undefined) {
+            var metadataName = (applet.metaData.pluginId !== null) ? String(applet.metaData.pluginId) : "";
+            if (metadataName !== "") {
+                return metadataName;
+            }
+        }
+
+        if (applet.applet !== undefined && applet.applet && applet.applet !== applet) {
+            var backendName = appletPluginName(applet.applet);
+            if (backendName !== "") {
+                return backendName;
+            }
+        }
+
+        if (applet.plasmoid !== undefined && applet.plasmoid && applet.plasmoid !== applet) {
+            var plasmoidName = appletPluginName(applet.plasmoid);
+            if (plasmoidName !== "") {
+                return plasmoidName;
+            }
+        }
+
+        return "";
     }
 
     function resolveAppletItem(applet) {
@@ -650,6 +680,13 @@ ContainmentItem {
 
         if (applet.anchors !== undefined) {
             return applet;
+        }
+
+        if (fastLayoutManager && typeof fastLayoutManager.resolveAppletQuickItem === "function") {
+            var resolvedAppletItem = fastLayoutManager.resolveAppletQuickItem(applet);
+            if (resolvedAppletItem && resolvedAppletItem.anchors !== undefined) {
+                return resolvedAppletItem;
+            }
         }
 
         if (typeof Containment.itemFor === "function") {
@@ -678,6 +715,9 @@ ContainmentItem {
     }
 
     function initAppletContainer(appletContainer, applet) {
+        appletContainer.backendAppletRef = applet;
+        appletContainer.sourceAppletPluginName = appletPluginName(applet);
+
         var appletItem = resolveAppletItem(applet);
         if (!appletItem || appletItem.anchors === undefined) {
             return false;
@@ -846,6 +886,39 @@ ContainmentItem {
         onAppletOrderChanged: root.updateIndexes();
         onSplitterPositionChanged: root.updateIndexes();
         onSplitterPosition2Changed: root.updateIndexes();
+    }
+
+    Timer {
+        id: repairAppletContainersTimer
+        interval: 180
+        repeat: false
+        onTriggered: {
+            fastLayoutManager.repairAppletContainers();
+            root.updateIndexes();
+        }
+    }
+
+    Timer {
+        id: runtimeAppletRepairTimer
+        interval: 150
+        repeat: true
+
+        property int remainingRuns: 0
+
+        function schedule() {
+            remainingRuns = 40;
+            restart();
+        }
+
+        onTriggered: {
+            fastLayoutManager.repairAppletContainers();
+            root.updateIndexes();
+
+            remainingRuns--;
+            if (remainingRuns <= 0) {
+                stop();
+            }
+        }
     }
 
     ///////////////BEGIN UI elements
@@ -1024,7 +1097,7 @@ ContainmentItem {
     }
 
     Behavior on maxLengthPerCentage {
-        enabled: root.behaveAsDockWithMask && plasmoid.configuration.floatingGapHidingWaitsMouse && dockContainsMouse
+        enabled: plasmoid.configuration.floatingGapHidingWaitsMouse && dockContainsMouse
         NumberAnimation {
             duration: animations.duration.short
             easing.type: Easing.InQuad

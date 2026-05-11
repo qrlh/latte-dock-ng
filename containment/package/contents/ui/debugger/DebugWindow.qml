@@ -616,19 +616,6 @@ Window{
             }
 
             Text{
-                text: "Behave As Plasma Panel"+space
-            }
-
-            Text{
-                text: {
-                    if (root.behaveAsPlasmaPanel)
-                        return "Yes";
-                    else
-                        return "No";
-                }
-            }
-
-            Text{
                 text: "Draw Shadows (external)"+space
             }
 

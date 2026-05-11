@@ -175,8 +175,8 @@ void TabLayouts::initLayoutMenu()
     connectActionWithButton(m_ui->readOnlyButton, m_readOnlyLayoutAction);
     connect(m_readOnlyLayoutAction, &QAction::triggered, this, &TabLayouts::lockLayout);
 
-    m_viewsAction = m_layoutMenu->addAction(i18nc("layout docks / panels", "Docks, &Panels..."));
-    m_viewsAction->setToolTip(i18n("Show selected layouts docks and panels"));
+    m_viewsAction = m_layoutMenu->addAction(i18nc("layout docks", "&Docks..."));
+    m_viewsAction->setToolTip(i18n("Show selected layout docks"));
     m_viewsAction->setIcon(QIcon::fromTheme("window"));
     m_viewsAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_P));
     connectActionWithButton(m_ui->viewsBtn, m_viewsAction);

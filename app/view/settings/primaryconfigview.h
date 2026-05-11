@@ -45,7 +45,6 @@ class View;
 namespace Latte {
 namespace ViewPart {
 class CanvasConfigView;
-class SecondaryConfigView;
 
 namespace Config{
 class IndicatorUiManager;
@@ -59,8 +58,6 @@ namespace ViewPart {
 class PrimaryConfigView : public SubConfigView
 {
     Q_OBJECT
-    //! used when the secondary config window can not be shown
-    Q_PROPERTY(bool showInlineProperties READ showInlineProperties NOTIFY showInlinePropertiesChanged)
     Q_PROPERTY(bool isReady READ isReady NOTIFY isReadyChanged)
 
     Q_PROPERTY(int x READ x NOTIFY xChanged)
@@ -71,12 +68,6 @@ class PrimaryConfigView : public SubConfigView
     Q_PROPERTY(Latte::ViewPart::Config::IndicatorUiManager *indicatorUiManager READ indicatorUiManager NOTIFY indicatorUiManagerChanged)
 
 public:
-    enum ConfigViewType
-    {
-        PrimaryConfig = 0,
-        SecondaryConfig
-    };
-
     PrimaryConfigView(Latte::View *view);
     ~PrimaryConfigView() override;
 
@@ -84,7 +75,6 @@ public:
 
     bool isReady() const;
 
-    bool showInlineProperties() const;
     bool sticker() const;
 
     QRect availableScreenGeometry() const;
@@ -110,7 +100,6 @@ Q_SIGNALS:
     void indicatorUiManagerChanged();
     void isReadyChanged();
     void raiseDocksTemporaryChanged();
-    void showInlinePropertiesChanged();
     void showSignal();
     void xChanged();
     void yChanged();
@@ -127,16 +116,9 @@ protected:
 private Q_SLOTS:
     void immutabilityChanged(Plasma::Types::ImmutabilityType type);
     void updateAvailableScreenGeometry(View *origin = nullptr);
-    void updateShowInlineProperties();
-
-    void showSecondaryWindow();
-    void hideSecondaryWindow();
 
     void showCanvasWindow();
     void hideCanvasWindow();
-
-    void setShowInlineProperties(bool show);
-
 
 private:
     void setIsReady(bool ready);
@@ -149,7 +131,6 @@ private:
     bool m_blockFocusLostOnStartup{true};
     bool m_inReverse{false};    //! it is used by the borders
     bool m_isReady{false};
-    bool m_showInlineProperties{false};
 
     Latte::Types::Visibility m_originalMode{Latte::Types::DodgeActive};
 
@@ -158,7 +139,6 @@ private:
     QRect m_availableScreenGeometry;
     QRect m_geometryWhenVisible;
 
-    QPointer<SecondaryConfigView> m_secConfigView;
     QPointer<CanvasConfigView> m_canvasConfigView;
 
     Config::IndicatorUiManager *m_indicatorUiManager{nullptr};
@@ -170,4 +150,3 @@ private:
 }
 }
 #endif //PRIMARYCONFIGVIEW_H
-

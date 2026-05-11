@@ -7,7 +7,6 @@
 import QtQuick 2.0
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.0
-import QtQuick.Effects
 
 import org.kde.plasma.core 2.0 as PlasmaCore
 import org.kde.plasma.components 3.0 as PlasmaComponents
@@ -24,9 +23,6 @@ Item {
     property alias cfg_useThemePanel: useThemePanel.checked
     property alias cfg_panelSize: panelSize.value
     property alias cfg_transparentPanel: transparentPanel.checked
-    property alias cfg_isInNowDockPanel: mainItem.isInNowDockPanel
-
-    property bool isInNowDockPanel
 
     ColumnLayout {
 
@@ -35,7 +31,6 @@ Item {
         Layout.fillWidth: true
 
         GridLayout{
-            enabled: !mainItem.isInNowDockPanel
             Layout.fillWidth: true
             columns: 3
             property bool panelConfigEnabled: showBarLine.checked && useThemePanel.checked
@@ -115,38 +110,6 @@ Item {
             Label{}
 
         }
-    }
-
-    MultiEffect {
-        id: shadowText
-        anchors.fill: inNowDockLabel
-        enabled: isInNowDockPanel
-        shadowEnabled: true
-        shadowColor: "#cc080808"
-        source: inNowDockLabel
-        shadowBlur: 0.1
-        shadowVerticalOffset: 2
-        shadowHorizontalOffset: -1
-        visible: isInNowDockPanel
-    }
-
-
-    Label {
-        id:inNowDockLabel
-        anchors.horizontalCenter: mainItem.horizontalCenter
-        anchors.verticalCenter: mainColumn.verticalCenter
-      //  anchors.verticalCenterOffset:  (mainColumn.height / 4)
-
-        width: 0.85 * mainItem.width
-        text: i18n("For the disabled settings, use the Latte Dock NG Settings window")
-        visible: mainItem.isInNowDockPanel
-
-        horizontalAlignment: Text.AlignHCenter
-        //  font.bold: true
-        font.italic: true
-        font.pointSize: 1.2 * theme.defaultFont.pointSize
-
-        wrapMode: Text.WordWrap
     }
 
 }

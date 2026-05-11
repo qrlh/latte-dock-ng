@@ -41,10 +41,6 @@ Item{
         property: "x"
         when: !visibilityManager.inRelocationAnimation
         value: {
-            if (root.behaveAsPlasmaPanel) {
-                return 0;
-            }
-
             if ( latteView && root.isHorizontal && root.myView.alignment === LatteCore.types.Justify ){
                 return ((latteView.width/2) - (root.maxLength/2) + background.offset);
             } else {
@@ -74,10 +70,6 @@ Item{
         property: "y"
         when: !visibilityManager.inRelocationAnimation
         value: {
-            if (root.behaveAsPlasmaPanel) {
-                return 0;
-            }
-
             if ( latteView && root.isVertical && root.myView.alignment === LatteCore.types.Justify ) {
                 return ((latteView.height/2) - (root.maxLength/2) + background.offset);
             } else {
@@ -116,10 +108,6 @@ Item{
 
 
     readonly property int backgroundShadowTailLength: {
-        if (root.behaveAsPlasmaPanel) {
-            return 0;
-        }
-
         if (root.myView.alignment === LatteCore.types.Left) {
             return background.shadows.left;
         } else if (root.myView.alignment === LatteCore.types.Right) {
@@ -135,10 +123,6 @@ Item{
     }
 
     readonly property int backgroundShadowHeadLength: {
-        if (root.behaveAsPlasmaPanel) {
-            return 0;
-        }
-
         if (root.myView.alignment === LatteCore.types.Left) {
             return background.shadows.right;
         } else if (root.myView.alignment === LatteCore.types.Right) {

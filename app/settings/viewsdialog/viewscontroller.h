@@ -139,7 +139,7 @@ private:
 
     KConfigGroup m_storage;
 
-    //! context menu actions for docks panels
+    //! context menu actions for docks
     QAction *m_cutAction;
     QAction *m_copyAction;
     QAction *m_duplicateAction;
@@ -155,4 +155,3 @@ private:
 }
 
 #endif
-

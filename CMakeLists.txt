@@ -3,7 +3,7 @@ project(lattedock)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(VERSION 1.0.11)
+set(VERSION 1.0.13)
 set(AUTHOR "Ruizhi Zhong")
 set(EMAIL "ruizhi.zhong88@gmail.com")
 set(WEBSITE "https://github.com/ruizhi-lab/latte-dock-ng")
@@ -14,6 +14,11 @@ set(QT_MIN_VERSION "6.6.0")
 set(KF6_MIN_VERSION "6.0.0")
 set(PLASMA_MIN_VERSION "6.6.0")
 set(KDE_COMPILERSETTINGS_LEVEL "6.0.0")
+
+# Accepted from install.sh for compatibility with KDE-style build knobs.
+# Latte Dock NG does not currently auto-fetch translations at configure time.
+option(KDE_L10N_AUTO_TRANSLATIONS "Compatibility flag for external install scripts." OFF)
+set(KDE_L10N_BRANCH "" CACHE STRING "Compatibility translation branch name from external scripts.")
 
 set(KF6_LOCALE_PREFIX "")
 set(QT_MAJOR_VERSION 6)
@@ -252,15 +257,11 @@ if("${LATTE_QUICKADDONS_TARGET}" STREQUAL "")
 endif()
 
 if("${LATTE_QUICKADDONS_TARGET}" STREQUAL "")
-    message(WARNING
-        "Could not resolve a KQuickAddons CMake link target. "
-        "Proceeding without explicit KQuickAddons link target.")
+    message(STATUS "No explicit KQuickAddons link target is exported by this KF6 build.")
 endif()
 
 if("${LATTE_DECLARATIVE_TARGET}" STREQUAL "")
-    message(WARNING
-        "Could not resolve a KDEclarative CMake link target. "
-        "Proceeding without explicit KDeclarative link target.")
+    message(STATUS "No explicit KDeclarative link target is exported by this KF6 build.")
 endif()
 
 if("${LATTE_NEWSTUFF_TARGET}" STREQUAL "")

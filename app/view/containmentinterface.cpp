@@ -1015,7 +1015,7 @@ void ContainmentInterface::onAppletAdded(Plasma::Applet *applet)
         }
     }
 
-    //! Track All Applets, for example to support syncing between different docks and panels
+    //! Track all applets, for example to support syncing between different docks
     if (ai) {
         bool initializing{!m_appletData.contains(currentAppletId)};
 

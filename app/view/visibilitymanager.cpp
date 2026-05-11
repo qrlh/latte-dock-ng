@@ -74,18 +74,15 @@ VisibilityManager::VisibilityManager(PlasmaQuick::ContainmentView *view)
 
     if (m_latteView) {
         connect(m_latteView, &Latte::View::eventTriggered, this, &VisibilityManager::viewEventManager);
-        connect(m_latteView, &Latte::View::behaveAsPlasmaPanelChanged , this, &VisibilityManager::updateKWinEdgesSupport);
 
         connect(m_latteView, &Latte::View::inEditModeChanged, this, &VisibilityManager::initViewFlags);
 
         //! Frame Extents
         connect(m_latteView, &Latte::View::headThicknessGapChanged, this, &VisibilityManager::onHeadThicknessChanged);
         connect(m_latteView, &Latte::View::locationChanged, this, [&]() {
-            if (!m_latteView->behaveAsPlasmaPanel()) {
-                //! Resend frame extents because their geometry has changed
-                const bool forceUpdate{true};
-                publishFrameExtents(forceUpdate);
-            }
+            //! Resend frame extents because their geometry has changed
+            const bool forceUpdate{true};
+            publishFrameExtents(forceUpdate);
         });
 
         connect(m_latteView, &Latte::View::typeChanged, this, [&]() {
@@ -265,7 +262,7 @@ void VisibilityManager::setMode(Latte::Types::Visibility mode)
 
         // disabling this call because it was creating too many struts calls and   ???
         // could create reduced responsiveness for DynamicStruts Scenario(for example ??
-        // when dragging active window from a floating dock/panel) ???
+        // when dragging active window from a floating dock) ???
         m_connections[base+1] = connect(m_latteView, &Latte::View::absoluteGeometryChanged, this, &VisibilityManager::updateStrutsAfterTimer);
 
         m_connections[base+2] = connect(m_corona->activitiesConsumer(), &KActivities::Consumer::currentActivityChanged, this, [&]() {
@@ -637,15 +634,11 @@ void VisibilityManager::publishFrameExtents(bool forceUpdate)
 
         qDebug() << " -> Frame Extents :: " << m_frameExtentsLocation << " __ " << " extents :: " << frameExtents;
 
-        if (!frameExtents.isNull() && !m_latteView->behaveAsPlasmaPanel()) {
+        if (!frameExtents.isNull()) {
             //! When a view returns its frame extents to zero then that triggers a compositor
             //! strange behavior that moves/hides the view totally and freezes entire Latte
             //! this is why we have blocked that setting
             m_wm->setFrameExtents(m_latteView, frameExtents);
-        } else if (m_latteView->behaveAsPlasmaPanel()) {
-            QMargins panelExtents(0, 0, 0, 0);
-            m_wm->setFrameExtents(m_latteView, panelExtents);
-            Q_EMIT frameExtentsCleared();
         }
     }
 }
@@ -1022,7 +1015,7 @@ void VisibilityManager::updateKWinEdgesSupport()
          || m_mode == Types::DodgeAllWindows
          || m_mode == Types::DodgeMaximized) {
 
-        if (m_enableKWinEdgesFromUser || m_latteView->behaveAsPlasmaPanel()) {
+        if (m_enableKWinEdgesFromUser) {
             createEdgeGhostWindow();
         } else if (!m_enableKWinEdgesFromUser) {
             deleteEdgeGhostWindow();

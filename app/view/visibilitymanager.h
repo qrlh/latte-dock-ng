@@ -137,7 +137,6 @@ Q_SIGNALS:
     void slideOutFinished();
     void slideInFinished();
 
-    void frameExtentsCleared();
     void modeChanged();
     void raiseOnDesktopChanged();
     void raiseOnActivityChanged();

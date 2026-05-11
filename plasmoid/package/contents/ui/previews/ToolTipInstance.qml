@@ -388,7 +388,7 @@ Column {
                             elide: Text.ElideRight
                             text: artist || ""
                             visible: text != ""
-                            font.pointSize: theme.defaultFont.pointSize * 0.9
+                            font.pixelSize: Math.max(1, Math.round(theme.defaultFont.pixelSize * 0.9))
                         }
                     }
 

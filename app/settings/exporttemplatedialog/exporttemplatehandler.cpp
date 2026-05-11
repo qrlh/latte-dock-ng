@@ -60,7 +60,7 @@ ExportTemplateHandler::ExportTemplateHandler(Dialog::ExportTemplateDialog *dialo
     : ExportTemplateHandler(dialog)
 {
     loadApplets(view.id);
-    m_dialog->setWindowTitle(i18n("Export Dock/Panel Template"));
+    m_dialog->setWindowTitle(i18n("Export Dock Template"));
 
     QString viewname = view.name.isEmpty() ? view.originLayout() + " " + i18n("Dock") : view.name;
     o_filepath = dialog->corona()->templatesManager()->proposedTemplateAbsolutePath(viewname + ".view.latte");
@@ -70,7 +70,7 @@ ExportTemplateHandler::ExportTemplateHandler(Dialog::ExportTemplateDialog *dialo
 ExportTemplateHandler::ExportTemplateHandler(Dialog::ExportTemplateDialog *dialog, Latte::View *view)
     : ExportTemplateHandler(dialog)
 {
-    QString type = (view->type() == Latte::Types::PanelView ? i18n("Panel") : i18n("Dock"));
+    QString type = i18n("Dock");
 
     QString temporiginfile = view->layout()->storedView(view->containment()->id());
 

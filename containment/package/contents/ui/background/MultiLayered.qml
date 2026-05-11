@@ -39,10 +39,10 @@ BackgroundProperties{
     hasTopBorder: hasAllBorders || ((solidBackground.enabledBorders & KSvg.FrameSvg.TopBorder) > 0)
     hasBottomBorder: hasAllBorders || ((solidBackground.enabledBorders & KSvg.FrameSvg.BottomBorder) > 0)
 
-    shadows.left: hasLeftBorder && root.behaveAsDockWithMask ? (customShadowIsEnabled ? customShadow : shadowsSvgItem.margins.left) : 0
-    shadows.right: hasRightBorder && root.behaveAsDockWithMask ? (customShadowIsEnabled ? customShadow : shadowsSvgItem.margins.right) : 0
-    shadows.top: hasTopBorder && root.behaveAsDockWithMask ? (customShadowIsEnabled ? customShadow : shadowsSvgItem.margins.top) : 0
-    shadows.bottom: hasBottomBorder && root.behaveAsDockWithMask ? (customShadowIsEnabled ? customShadow : shadowsSvgItem.margins.bottom) : 0
+    shadows.left: hasLeftBorder ? (customShadowIsEnabled ? customShadow : shadowsSvgItem.margins.left) : 0
+    shadows.right: hasRightBorder ? (customShadowIsEnabled ? customShadow : shadowsSvgItem.margins.right) : 0
+    shadows.top: hasTopBorder ? (customShadowIsEnabled ? customShadow : shadowsSvgItem.margins.top) : 0
+    shadows.bottom: hasBottomBorder ? (customShadowIsEnabled ? customShadow : shadowsSvgItem.margins.bottom) : 0
 
     shadows.fixedLeft: (customDefShadowIsEnabled || customUserShadowIsEnabled) ? customShadow : shadowsSvgItem.fixedMargins.left
     shadows.fixedRight: (customDefShadowIsEnabled || customUserShadowIsEnabled) ? customShadow : shadowsSvgItem.fixedMargins.right
@@ -124,10 +124,6 @@ BackgroundProperties{
     }
 
     length: {
-        if (root.behaveAsPlasmaPanel && LatteCore.WindowSystem.compositingActive) {
-            return root.isVertical ? root.height : root.width;
-        }
-
         if (myView.alignment === LatteCore.types.Justify) {
             return root.maxLength;
         }
@@ -135,19 +131,9 @@ BackgroundProperties{
         return Math.max(root.minLength, layoutsContainerItem.mainLayout.length + totals.paddingsLength);
     }
 
-    thickness: {
-        if (root.behaveAsPlasmaPanel) {
-            return metrics.totals.thickness;
-        } else {
-            return Math.min(metrics.totals.thickness, background.totals.visualThickness);
-        }
-    }
+    thickness: Math.min(metrics.totals.thickness, background.totals.visualThickness)
 
     offset: {
-        if (behaveAsPlasmaPanel) {
-            return 0;
-        }
-
         if (root.isHorizontal) {
             if (myView.alignment === LatteCore.types.Left) {
                 return root.offset - shadows.left;
@@ -192,13 +178,7 @@ BackgroundProperties{
         return Math.max(totals.minThickness, totals.minThickness + (percentage*maximumItem));
     }
 
-    totals.visualLength: {
-        if (root.behaveAsPlasmaPanel) {
-            return root.isVertical ? root.height : root.width;
-        }
-
-        return Math.max(background.length + totals.shadowsLength, totals.paddingsLength + totals.shadowsLength)
-    }
+    totals.visualLength: Math.max(background.length + totals.shadowsLength, totals.paddingsLength + totals.shadowsLength)
 
     readonly property int tailRoundness: {
         if ((root.isHorizontal && hasLeftBorder) || (!root.isHorizontal && hasTopBorder)) {
@@ -269,7 +249,7 @@ BackgroundProperties{
             return themeExtendedBackground.roundness;
         }
 
-        return plasmoid.formFactor === PlasmaCore.Types.Horizontal ?
+        return root.isHorizontal ?
                     (plasmoid.configuration.backgroundRadius/100) * solidBackground.height :
                     (plasmoid.configuration.backgroundRadius/100) * solidBackground.width
     }
@@ -330,8 +310,7 @@ BackgroundProperties{
         //! set true by default in order to avoid crash on startup because imagePath is set to ""
         readonly property bool themeHasShadow: themeExtended ? themeExtended.hasShadow : true
 
-        readonly property bool hideShadow: root.behaveAsPlasmaPanel
-                                           || !LatteCore.WindowSystem.compositingActive
+        readonly property bool hideShadow: !LatteCore.WindowSystem.compositingActive
                                            || !root.panelShadowsActive
                                            || !themeHasShadow
                                            || customShadowedRectangleIsEnabled
@@ -458,14 +437,9 @@ BackgroundProperties{
                     efGeometry.width = 1;
                     efGeometry.height = 1;
                 } else {
-                    if (!root.behaveAsPlasmaPanel) {
-                        var rootGeometry = mapToItem(root, 0, 0);
-                        efGeometry.x = rootGeometry.x;
-                        efGeometry.y = rootGeometry.y;
-                    } else {
-                        efGeometry.x = 0;
-                        efGeometry.y = 0;
-                    }
+                    var rootGeometry = mapToItem(root, 0, 0);
+                    efGeometry.x = rootGeometry.x;
+                    efGeometry.y = rootGeometry.y;
 
                     efGeometry.width = width;
                     efGeometry.height = height;
@@ -479,11 +453,6 @@ BackgroundProperties{
             id: updateEffectsAreaTimer
             interval: 11 //! 90Hz or 90calls/sec
             onTriggered: solidBackground.invUpdateEffectsArea();
-        }
-
-        onRepaintNeeded: {
-            if (root.behaveAsPlasmaPanel)
-                adjustPrefix();
         }
 
         enabledBorders: latteView && latteView.effects ? latteView.effects.enabledBorders : KSvg.FrameSvg.NoBorder

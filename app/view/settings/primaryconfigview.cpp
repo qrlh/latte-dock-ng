@@ -11,7 +11,6 @@
 #include <config-latte.h>
 #include "canvasconfigview.h"
 #include "indicatoruimanager.h"
-#include "secondaryconfigview.h"
 #include "../effects.h"
 #include "../panelshadows_p.h"
 #include "../view.h"
@@ -38,7 +37,6 @@
 
 #define CANVASWINDOWINTERVAL 50
 #define PRIMARYWINDOWINTERVAL 250
-#define SECONDARYWINDOWINTERVAL 200
 #define SLIDEOUTINTERVAL 400
 
 namespace Latte {
@@ -73,8 +71,6 @@ PrimaryConfigView::PrimaryConfigView(Latte::View *view)
         });
 
         connect(m_corona->universalSettings(), &Latte::UniversalSettings::inAdvancedModeForEditSettingsChanged,
-                this, &PrimaryConfigView::updateShowInlineProperties);
-        connect(m_corona->universalSettings(), &Latte::UniversalSettings::inAdvancedModeForEditSettingsChanged,
                 this, &PrimaryConfigView::syncGeometry);
     }
 
@@ -95,9 +91,6 @@ PrimaryConfigView::~PrimaryConfigView()
         delete m_canvasConfigView;
     }
 
-    if (m_secConfigView) {
-        delete m_secConfigView;
-    }
 }
 
 void PrimaryConfigView::init()
@@ -109,6 +102,14 @@ void PrimaryConfigView::init()
     auto source = QUrl::fromLocalFile(m_latteView->containment()->corona()->kPackage().filePath(tempFilePath));
     setSource(source);
     syncGeometry();
+
+    // The QML root may resolve its implicit size asynchronously in Qt 6, so
+    // re-run syncGeometry whenever it changes. Otherwise the window stays at
+    // its initial 0x0 and Wayland kills the connection.
+    if (rootObject()) {
+        connect(rootObject(), &QQuickItem::widthChanged, this, &PrimaryConfigView::syncGeometry);
+        connect(rootObject(), &QQuickItem::heightChanged, this, &PrimaryConfigView::syncGeometry);
+    }
 }
 
 Config::IndicatorUiManager *PrimaryConfigView::indicatorUiManager()
@@ -119,10 +120,6 @@ Config::IndicatorUiManager *PrimaryConfigView::indicatorUiManager()
 void PrimaryConfigView::setOnActivities(QStringList activities)
 {
     m_corona->wm()->setWindowOnActivities(trackedWindowId(), activities);
-
-    if (m_secConfigView) {
-        m_corona->wm()->setWindowOnActivities(m_secConfigView->trackedWindowId(), activities);
-    }
 
     if (m_canvasConfigView) {
         m_corona->wm()->setWindowOnActivities(m_canvasConfigView->trackedWindowId(), activities);
@@ -135,10 +132,6 @@ void PrimaryConfigView::requestActivate()
         if (m_shellSurface) {
             m_corona->wm()->requestActivate(m_latteView->positioner()->trackedWindowId());
         }
-    }
-
-    if (m_secConfigView) {
-        m_secConfigView->requestActivate();
     }
 
     SubConfigView::requestActivate();
@@ -156,7 +149,6 @@ void PrimaryConfigView::showConfigWindow()
 
     showAfter(PRIMARYWINDOWINTERVAL);
     showCanvasWindow();
-    showSecondaryWindow();
 }
 
 void PrimaryConfigView::hideConfigWindow()
@@ -169,7 +161,6 @@ void PrimaryConfigView::hideConfigWindow()
     }
 
     hideCanvasWindow();
-    hideSecondaryWindow();
 }
 
 void PrimaryConfigView::showCanvasWindow()
@@ -187,30 +178,6 @@ void PrimaryConfigView::hideCanvasWindow()
 {
     if (m_canvasConfigView) {
         m_canvasConfigView->hideConfigWindow();
-    }
-}
-
-void PrimaryConfigView::showSecondaryWindow()
-{
-    bool isValidShowing{m_latteView->formFactor() == Plasma::Types::Horizontal && inAdvancedMode()};
-
-    if (!isValidShowing) {
-        return;
-    }
-
-    if (!m_secConfigView) {
-        m_secConfigView = new SecondaryConfigView(m_latteView, this);
-    }
-
-    if (m_secConfigView && !m_secConfigView->isVisible()){
-        m_secConfigView->showAfter(SECONDARYWINDOWINTERVAL);
-    }
-}
-
-void PrimaryConfigView::hideSecondaryWindow()
-{
-    if (m_secConfigView) {
-        m_secConfigView->hideConfigWindow();
     }
 }
 
@@ -277,10 +244,6 @@ void PrimaryConfigView::initParentView(Latte::View *view)
         m_canvasConfigView->setParentView(view);
     }
 
-    if (m_secConfigView) {
-        m_secConfigView->setParentView(view);
-    }
-
     //! inform view about the current settings level
     Q_EMIT m_latteView->inSettingsAdvancedModeChanged();
 }
@@ -333,7 +296,24 @@ void PrimaryConfigView::syncGeometry()
         return;
     }
 
-    const QSize size(rootObject()->width(), rootObject()->height());
+    int resolvedWidth = static_cast<int>(rootObject()->width());
+    int resolvedHeight = static_cast<int>(rootObject()->height());
+
+    if (resolvedWidth <= 0 || resolvedHeight <= 0) {
+        resolvedWidth = static_cast<int>(rootObject()->implicitWidth());
+        resolvedHeight = static_cast<int>(rootObject()->implicitHeight());
+    }
+
+    const QSize size(resolvedWidth, resolvedHeight);
+
+    // In Qt 6 the QML root may not yet have its implicit size when init() calls
+    // syncGeometry(). Showing a 0x0 surface on Wayland aborts the Wayland
+    // connection ("invalid window geometry size") and crashes Latte. Bail out
+    // and let a later widthChanged/heightChanged trigger schedule a real
+    // geometry sync once the QML has laid itself out.
+    if (size.width() <= 0 || size.height() <= 0) {
+        return;
+    }
     const auto location = m_latteView->containment()->location();
     const auto scrGeometry = m_latteView->screenGeometry();
     const auto availGeometry = m_availableScreenGeometry;
@@ -432,8 +412,6 @@ void PrimaryConfigView::showEvent(QShowEvent *ev)
     m_screenSyncTimer.start();
     QTimer::singleShot(400, this, &PrimaryConfigView::syncGeometry);
 
-    updateShowInlineProperties();
-
     showCanvasWindow();
 
     Q_EMIT showSignal();
@@ -467,11 +445,10 @@ void PrimaryConfigView::hideEvent(QHideEvent *ev)
 bool PrimaryConfigView::hasFocus() const
 {
     bool primaryHasHocus{isActive()};
-    bool secHasFocus{m_secConfigView && m_secConfigView->isActive()};
     bool canvasHasFocus{m_canvasConfigView && m_canvasConfigView->isActive()};
     bool viewHasFocus{m_latteView && (m_latteView->containsMouse() || m_latteView->alternativesIsShown())};
 
-    return (m_blockFocusLost || viewHasFocus || primaryHasHocus || secHasFocus || canvasHasFocus);
+    return (m_blockFocusLost || viewHasFocus || primaryHasHocus || canvasHasFocus);
 }
 
 void PrimaryConfigView::focusOutEvent(QFocusEvent *ev)
@@ -528,56 +505,6 @@ void PrimaryConfigView::setSticker(bool blockFocusLost)
         return;
 
     m_blockFocusLost = blockFocusLost;
-}
-
-bool PrimaryConfigView::showInlineProperties() const
-{
-    return m_showInlineProperties;
-}
-void PrimaryConfigView::setShowInlineProperties(bool show)
-{
-    if (m_showInlineProperties == show) {
-        return;
-    }
-
-    m_showInlineProperties = show;
-    Q_EMIT showInlinePropertiesChanged();
-}
-
-void PrimaryConfigView::updateShowInlineProperties()
-{
-    if (!m_latteView) {
-        return;
-    }
-
-    bool showSecWindow{false};
-    bool advancedApprovedSecWindow{false};
-
-    if (inAdvancedMode() && m_latteView->formFactor() != Plasma::Types::Vertical) {
-        showSecWindow = true;
-        advancedApprovedSecWindow = true;
-    }
-
-    //! consider screen geometry for showing or not the secondary window
-    if (showSecWindow && !geometryWhenVisible().isNull()) {
-        if (m_secConfigView && m_secConfigView->geometryWhenVisible().intersects(geometryWhenVisible())) {
-            showSecWindow = false;
-        } else if (advancedApprovedSecWindow) {
-            showSecWindow = true;
-        }
-    }
-
-    if (showSecWindow) {
-        showSecondaryWindow();
-
-       // QTimer::singleShot(150, m_secConfigView, SLOT(show()));
-        setShowInlineProperties(false);
-    } else {
-        hideSecondaryWindow();
-        setShowInlineProperties(true);
-    }
-
-    // qDebug() << " showSecWindow:" << showSecWindow << " _ " << " inline:"<< !showSecWindow;
 }
 
 bool PrimaryConfigView::inAdvancedMode() const

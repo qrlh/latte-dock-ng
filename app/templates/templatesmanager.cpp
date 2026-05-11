@@ -333,10 +333,8 @@ void Manager::exposeTranslatedTemplateNames()
     i18nc("default layout template name", "Default");
     i18nc("empty layout template name", "Empty");
 
-    //! dock/panel templates default names
+    //! dock templates default names
     i18nc("view template name", "Default Dock");
-    i18nc("view template name", "Default Panel");
-    i18nc("view template name", "Empty Panel");
 }
 
 }

@@ -6,6 +6,7 @@
 #include "layoutstableview.h"
 
 //! Qt
+#include <QApplication>
 #include <QDebug>
 #include <QMimeData>
 
@@ -31,7 +32,21 @@ LayoutsTableView::LayoutsTableView(QWidget *parent)
     m_overlayDropMessage->setAutoFillBackground(true);
     QFont fn = m_overlayDropMessage->font();
     fn.setBold(true);
-    fn.setPointSize(fn.pointSize() * 3);
+
+    const qreal pointSize = fn.pointSizeF();
+    if (pointSize > 0) {
+        fn.setPointSizeF(pointSize * 3.0);
+    } else {
+        int pixelSize = fn.pixelSize();
+        if (pixelSize <= 0) {
+            pixelSize = QApplication::font().pixelSize();
+        }
+
+        if (pixelSize > 0) {
+            fn.setPixelSize(pixelSize * 3);
+        }
+    }
+
     m_overlayDropMessage->setFont(fn);
     m_overlayDropMessage->setAlignment(Qt::AlignCenter);
 
@@ -81,4 +96,3 @@ void LayoutsTableView::dragLeft()
 }
 }
 }
-

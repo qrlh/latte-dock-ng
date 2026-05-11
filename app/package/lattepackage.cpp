@@ -36,7 +36,6 @@ void Package::initPackage(KPackage::Package *package)
     package->addFileDefinition("widgetexplorerui", QStringLiteral("views/WidgetExplorer.qml"));
     //Configuration
     package->addFileDefinition("lattedockconfigurationui", QStringLiteral("configuration/LatteDockConfiguration.qml"));
-    package->addFileDefinition("lattedocksecondaryconfigurationui", QStringLiteral("configuration/LatteDockSecondaryConfiguration.qml"));
     package->addFileDefinition("canvasconfigurationui", QStringLiteral("configuration/CanvasConfiguration.qml"));
     package->addFileDefinition("configmodel", QStringLiteral("configuration/config.qml"));
     package->addFileDefinition("splitter", QStringLiteral("images/splitter.svgz"));

@@ -364,7 +364,7 @@
               <item>
                <widget class="QPushButton" name="viewsBtn">
                 <property name="text">
-                 <string notr="true">Docks, Panels...</string>
+                 <string>Docks...</string>
                 </property>
                 <property name="icon">
                  <iconset theme="window">

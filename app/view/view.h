@@ -70,7 +70,6 @@ class View : public PlasmaQuick::ContainmentView
     Q_PROPERTY(Latte::Types::ViewType type READ type WRITE setType NOTIFY typeChanged)
 
     Q_PROPERTY(bool alternativesIsShown READ alternativesIsShown NOTIFY alternativesIsShownChanged)
-    Q_PROPERTY(bool behaveAsPlasmaPanel READ behaveAsPlasmaPanel WRITE setBehaveAsPlasmaPanel NOTIFY behaveAsPlasmaPanelChanged)
     Q_PROPERTY(bool containsDrag READ containsDrag NOTIFY containsDragChanged)
     Q_PROPERTY(bool inSettingsAdvancedMode READ inSettingsAdvancedMode NOTIFY inSettingsAdvancedModeChanged)
 
@@ -140,15 +139,10 @@ public:
     bool onPrimary() const;
     void setOnPrimary(bool flag);
 
-    bool behaveAsPlasmaPanel() const;
-    void setBehaveAsPlasmaPanel(bool behavior);
-
     bool containsDrag() const;
     bool containsMouse() const;
 
     bool inEditMode() const;
-
-    bool isFloatingPanel() const;
 
     virtual bool isPreferredForShortcuts() const;
     void setIsPreferredForShortcuts(bool preferred);
@@ -290,7 +284,6 @@ Q_SIGNALS:
     void activitiesChanged();
     void alternativesIsShownChanged();
     void alignmentChanged();
-    void behaveAsPlasmaPanelChanged();
     void colorizerChanged();
     void configWindowGeometryChanged(); // is called from config windows
     void containmentActionsChanged();
@@ -340,7 +333,6 @@ Q_SIGNALS:
 
     void indicatorPluginChanged(const QString &indicatorId);
     void indicatorPluginRemoved(const QString &indicatorId);
-    void userRequestedViewType(const int &type);
 
     //! are used to trigger the Corona relevant signals and in that
     //! way we can disable any such signaling all together, e.g. through disconnectSensitiveSignals()
@@ -384,7 +376,6 @@ private:
     Plasma::Containment *containmentById(uint id);
 
     bool m_alternativesIsShown{false};
-    bool m_behaveAsPlasmaPanel{false};
     bool m_containsDrag{false};
     bool m_containsMouse{false};
     bool m_inDelete{false};

@@ -13,6 +13,7 @@
 
 // Qt
 #include <QQuickItem>
+#include <utility>
 
 // Plasma
 #include <Plasma/Applet>
@@ -34,23 +35,35 @@ SyncedLaunchers::~SyncedLaunchers()
 
 void SyncedLaunchers::addAbilityClient(QQuickItem *client)
 {
-    if (m_clients.contains(client)) {
+    if (!client) {
         return;
     }
 
-    m_clients << client;
+    compactClients();
+
+    for (const auto &clientPtr : std::as_const(m_clients)) {
+        if (clientPtr == client) {
+            return;
+        }
+    }
+
+    m_clients << QPointer<QQuickItem>(client);
 
     connect(client, &QObject::destroyed, this, &SyncedLaunchers::removeClientObject);
 }
 
 void SyncedLaunchers::removeAbilityClient(QQuickItem *client)
 {
-    if (!m_clients.contains(client)) {
+    if (!client) {
         return;
     }
 
+    for (int i = m_clients.count() - 1; i >= 0; --i) {
+        if (!m_clients[i] || m_clients[i] == client) {
+            m_clients.removeAt(i);
+        }
+    }
     disconnect(client, &QObject::destroyed, this, &SyncedLaunchers::removeClientObject);
-    m_clients.removeAll(client);
 }
 
 void SyncedLaunchers::removeClientObject(QObject *obj)
@@ -68,7 +81,14 @@ QQuickItem *SyncedLaunchers::client(const int &id)
         return nullptr;
     }
 
-    for(const auto client: m_clients) {
+    compactClients();
+
+    for (const auto &clientPtr : std::as_const(m_clients)) {
+        QQuickItem *client = clientPtr.data();
+        if (!client) {
+            continue;
+        }
+
         int clientid = client->property("clientId").toInt();
         if (clientid == id) {
             return client;
@@ -82,7 +102,14 @@ QList<QQuickItem *> SyncedLaunchers::clients(QString layoutName, QString groupId
 {
     QList<QQuickItem *> items;
 
-    for(const auto client: m_clients) {
+    compactClients();
+
+    for (const auto &clientPtr : std::as_const(m_clients)) {
+        QQuickItem *client = clientPtr.data();
+        if (!client) {
+            continue;
+        }
+
         QString cLayoutName = layoutName.isEmpty() ? QString() : client->property("layoutName").toString();
         QString gid = client->property("syncedGroupId").toString();
         if (cLayoutName == layoutName && gid == groupId) {
@@ -91,6 +118,15 @@ QList<QQuickItem *> SyncedLaunchers::clients(QString layoutName, QString groupId
     }
 
     return items;
+}
+
+void SyncedLaunchers::compactClients()
+{
+    for (int i = m_clients.count() - 1; i >= 0; --i) {
+        if (!m_clients[i]) {
+            m_clients.removeAt(i);
+        }
+    }
 }
 
 QList<QQuickItem *> SyncedLaunchers::clients(QString layoutName, uint senderId, Latte::Types::LaunchersGroup launcherGroup, QString launcherGroupId)

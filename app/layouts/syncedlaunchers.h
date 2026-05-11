@@ -12,6 +12,7 @@
 // Qt
 #include <QList>
 #include <QObject>
+#include <QPointer>
 #include <QQuickItem>
 
 namespace Plasma {
@@ -56,6 +57,7 @@ private:
     QList<QQuickItem *> clients(QString layoutName, QString groupId);
     QList<QQuickItem *> clients(QString layoutName, uint senderId, Latte::Types::LaunchersGroup launcherGroup, QString launcherGroupId);
     QQuickItem *client(const int &id);
+    void compactClients();
 
 private Q_SLOTS:
     void removeClientObject(QObject *obj);
@@ -63,7 +65,7 @@ private Q_SLOTS:
 private:
     Layouts::Manager *m_manager{nullptr};
 
-    QList<QQuickItem *> m_clients;
+    QList<QPointer<QQuickItem>> m_clients;
 };
 
 }

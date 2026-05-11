@@ -134,15 +134,7 @@ void Positioner::init()
     connect(m_view, &QQuickWindow::screenChanged, this, &Positioner::currentScreenChanged);
     connect(m_view, &QQuickWindow::screenChanged, this, &Positioner::onScreenChanged);
 
-    connect(m_view, &Latte::View::behaveAsPlasmaPanelChanged, this, &Positioner::syncGeometry);
     connect(m_view, &Latte::View::maxThicknessChanged, this, &Positioner::syncGeometry);
-
-    connect(m_view, &Latte::View::behaveAsPlasmaPanelChanged,  this, [&]() {
-        if (!m_view->behaveAsPlasmaPanel() && m_slideOffset != 0) {
-            m_slideOffset = 0;
-            syncGeometry();
-        }
-    });
 
     connect(m_view, &Latte::View::offsetChanged, this, [&]() {
         updatePosition(m_lastAvailableScreenRect);
@@ -155,18 +147,6 @@ void Positioner::init()
 
     connect(m_view, &Latte::View::editThicknessChanged, this, [&]() {
         updateCanvasGeometry(m_lastAvailableScreenRect);
-    });
-
-    connect(m_view, &Latte::View::maxLengthChanged, this, [&]() {
-        if (m_view->behaveAsPlasmaPanel()) {
-            syncGeometry();
-        }
-    });
-
-    connect(m_view, &Latte::View::normalThicknessChanged, this, [&]() {
-        if (m_view->behaveAsPlasmaPanel()) {
-            syncGeometry();
-        }
     });
 
     connect(m_view, &Latte::View::screenEdgeMarginEnabledChanged, this, [&]() {
@@ -183,17 +163,7 @@ void Positioner::init()
         }
     });
 
-    connect(m_view->effects(), &Latte::ViewPart::Effects::drawShadowsChanged, this, [&]() {
-        if (!m_view->behaveAsPlasmaPanel()) {
-            syncGeometry();
-        }
-    });
-
-    connect(m_view->effects(), &Latte::ViewPart::Effects::innerShadowChanged, this, [&]() {
-        if (m_view->behaveAsPlasmaPanel()) {
-            syncGeometry();
-        }
-    });
+    connect(m_view->effects(), &Latte::ViewPart::Effects::drawShadowsChanged, this, &Positioner::syncGeometry);
 
     connect(qGuiApp, &QGuiApplication::screenAdded, this, &Positioner::onScreenChanged);
     connect(m_corona->screenPool(), &ScreenPool::primaryScreenChanged, this, &Positioner::onScreenChanged);
@@ -205,12 +175,6 @@ void Positioner::init()
 
 void Positioner::initDelayedSignals()
 {
-    connect(m_view->visibility(), &ViewPart::VisibilityManager::isHiddenChanged, this, [&]() {
-        if (m_view->behaveAsPlasmaPanel() && !m_view->visibility()->isHidden() && qAbs(m_slideOffset)>0) {
-            //! ignore any checks to make sure the panel geometry is up-to-date
-            immediateSyncGeometry();
-        }
-    });
 }
 
 void Positioner::updateWaylandId()
@@ -555,7 +519,7 @@ void Positioner::immediateSyncGeometry()
             }
 
             //! On startup when offscreen use offscreen screen geometry.
-            //! This way vertical docks and panels are not showing are shrinked that
+            //! This way vertical docks that are not showing are shrinked so that
             //! need to be expanded after sliding-in in startup
             maximumRect = maximumNormalGeometry(m_inStartup ? availableScreenRect : QRect());
             QRegion availableRegion = freeRegion.intersected(maximumRect);
@@ -765,20 +729,6 @@ void Positioner::updatePosition(QRect availableScreenRect)
     QPoint position;
     position = {0, 0};
 
-    const auto gap = [&](int scr_length) -> int {
-        return static_cast<int>(scr_length * m_view->offset());
-    };
-    const auto gapCentered = [&](int scr_length) -> int {
-        return static_cast<int>(scr_length * ((1 - m_view->maxLength()) / 2) + scr_length * m_view->offset());
-    };
-    const auto gapReversed = [&](int scr_length) -> int {
-        return static_cast<int>(scr_length - (scr_length * m_view->maxLength()) - gap(scr_length));
-    };
-
-    int cleanThickness = m_view->normalThickness() - m_view->effects()->innerShadow();
-
-    int screenEdgeMargin = m_view->behaveAsPlasmaPanel() ? m_view->screenEdgeMargin() - qAbs(m_slideOffset) : 0;
-
     Plasma::Types::Location location = m_view->location();
     if ((location == Plasma::Types::Desktop || location == Plasma::Types::Floating) && m_view->containment()) {
         location = m_view->containment()->location();
@@ -786,70 +736,22 @@ void Positioner::updatePosition(QRect availableScreenRect)
 
     switch (location) {
     case Plasma::Types::TopEdge:
-        if (m_view->behaveAsPlasmaPanel()) {
-            int y = screenGeometry.y() + screenEdgeMargin;
-
-            if (m_view->alignment() == Latte::Types::Left) {
-                position = {screenGeometry.x() + gap(screenGeometry.width()), y};
-            } else if (m_view->alignment() == Latte::Types::Right) {
-                position = {screenGeometry.x() + gapReversed(screenGeometry.width()) + 1, y};
-            } else {
-                position = {screenGeometry.x() + gapCentered(screenGeometry.width()), y};
-            }
-        } else {
-            position = {screenGeometry.x(), screenGeometry.y()};
-        }
+        position = {screenGeometry.x(), screenGeometry.y()};
 
         break;
 
     case Plasma::Types::BottomEdge:
-        if (m_view->behaveAsPlasmaPanel()) {
-            int y = screenGeometry.y() + screenGeometry.height() - cleanThickness - screenEdgeMargin;
-
-            if (m_view->alignment() == Latte::Types::Left) {
-                position = {screenGeometry.x() + gap(screenGeometry.width()), y};
-            } else if (m_view->alignment() == Latte::Types::Right) {
-                position = {screenGeometry.x() + gapReversed(screenGeometry.width()) + 1, y};
-            } else {
-                position = {screenGeometry.x() + gapCentered(screenGeometry.width()), y};
-            }
-        } else {
-            position = {screenGeometry.x(), screenGeometry.y() + screenGeometry.height() - m_view->height()};
-        }
+        position = {screenGeometry.x(), screenGeometry.y() + screenGeometry.height() - m_view->height()};
 
         break;
 
     case Plasma::Types::RightEdge:
-        if (m_view->behaveAsPlasmaPanel()) {
-            int x = availableScreenRect.right() - cleanThickness + 1 - screenEdgeMargin;
-
-            if (m_view->alignment() == Latte::Types::Top) {
-                position = {x, availableScreenRect.y() + gap(availableScreenRect.height())};
-            } else if (m_view->alignment() == Latte::Types::Bottom) {
-                position = {x, availableScreenRect.y() + gapReversed(availableScreenRect.height()) + 1};
-            } else {
-                position = {x, availableScreenRect.y() + gapCentered(availableScreenRect.height())};
-            }
-        } else {
-            position = {availableScreenRect.right() - m_view->width() + 1, availableScreenRect.y()};
-        }
+        position = {availableScreenRect.right() - m_view->width() + 1, availableScreenRect.y()};
 
         break;
 
     case Plasma::Types::LeftEdge:
-        if (m_view->behaveAsPlasmaPanel()) {
-            int x = availableScreenRect.x() + screenEdgeMargin;
-
-            if (m_view->alignment() == Latte::Types::Top) {
-                position = {x, availableScreenRect.y() + gap(availableScreenRect.height())};
-            } else if (m_view->alignment() == Latte::Types::Bottom) {
-                position = {x, availableScreenRect.y() + gapReversed(availableScreenRect.height()) + 1};
-            } else {
-                position = {x, availableScreenRect.y() + gapCentered(availableScreenRect.height())};
-            }
-        } else {
-            position = {availableScreenRect.x(), availableScreenRect.y()};
-        }
+        position = {availableScreenRect.x(), availableScreenRect.y()};
 
         break;
 
@@ -911,19 +813,6 @@ void Positioner::resizeWindow(QRect availableScreenRect)
 {
     QSize screenSize = m_view->screen()->size();
     QSize size = (m_view->formFactor() == Plasma::Types::Vertical) ? QSize(m_view->maxThickness(), availableScreenRect.height()) : QSize(screenSize.width(), m_view->maxThickness());
-
-    if (m_view->formFactor() == Plasma::Types::Vertical) {
-        //qDebug() << "MAXIMUM RECT :: " << maximumRect << " - AVAILABLE RECT :: " << availableRect;
-        if (m_view->behaveAsPlasmaPanel()) {
-            size.setWidth(m_view->normalThickness());
-            size.setHeight(static_cast<int>(m_view->maxLength() * availableScreenRect.height()));
-        }
-    } else {
-        if (m_view->behaveAsPlasmaPanel()) {
-            size.setWidth(static_cast<int>(m_view->maxLength() * screenSize.width()));
-            size.setHeight(m_view->normalThickness());
-        }
-    }
 
     //! protect from invalid window size under wayland
     size.setWidth(qMax(1, size.width()));

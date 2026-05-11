@@ -93,28 +93,28 @@ void ActionsHandler::initItems()
     itemid = Latte::Data::ContextMenu::ADDVIEWACTION;
     itemindex = Latte::Data::ContextMenu::ACTIONSEDITORDER.indexOf(itemid);
     m_items[itemid] = new ActionsDialog::ActionListWidgetItem(QIcon::fromTheme("list-add"),
-                                                              i18n("Add Dock/Panel"),
+                                                              i18n("Add Dock"),
                                                               itemindex,
                                                               itemid);
 
     itemid = Latte::Data::ContextMenu::MOVEVIEWACTION;
     itemindex = Latte::Data::ContextMenu::ACTIONSEDITORDER.indexOf(itemid);
     m_items[itemid] = new ActionsDialog::ActionListWidgetItem(QIcon::fromTheme("transform-move-horizontal"),
-                                                              i18n("Move Dock/Panel To Layout"),
+                                                              i18n("Move Dock To Layout"),
                                                               itemindex,
                                                               itemid);
 
     itemid = Latte::Data::ContextMenu::EXPORTVIEWTEMPLATEACTION;
     itemindex = Latte::Data::ContextMenu::ACTIONSEDITORDER.indexOf(itemid);
     m_items[itemid] = new ActionsDialog::ActionListWidgetItem(QIcon::fromTheme("document-export"),
-                                                              i18n("Export Dock/Panel as Template..."),
+                                                              i18n("Export Dock as Template..."),
                                                               itemindex,
                                                               itemid);
 
     itemid = Latte::Data::ContextMenu::REMOVEVIEWACTION;
     itemindex = Latte::Data::ContextMenu::ACTIONSEDITORDER.indexOf(itemid);
     m_items[itemid] = new ActionsDialog::ActionListWidgetItem(QIcon::fromTheme("delete"),
-                                                              i18n("Remove Dock/Panel"),
+                                                              i18n("Remove Dock"),
                                                               itemindex,
                                                               itemid);
 

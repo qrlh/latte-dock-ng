@@ -24,14 +24,14 @@ Item {
         property:"maxThickness"
         //! prevents updating window geometry during closing window in wayland and such fixes a crash
         when: latteView && !visibilityManager.inRelocationHiding && !visibilityManager.inClientSideScreenEdgeSliding //&& !inStartup
-        value: root.behaveAsPlasmaPanel ? visibilityManager.thicknessAsPanel : metrics.maxThicknessForView
+        value: metrics.maxThicknessForView
     }
 
     Binding{
         target: latteView
         property:"normalThickness"
         when: latteView && updateIsEnabled
-        value: root.behaveAsPlasmaPanel ? visibilityManager.thicknessAsPanel : metrics.mask.screenEdge + metrics.mask.thickness.maxNormalForItemsWithoutScreenEdge
+        value: metrics.mask.screenEdge + metrics.mask.thickness.maxNormalForItemsWithoutScreenEdge
     }
 
     Binding{
@@ -46,9 +46,7 @@ Item {
         property: "headThicknessGap"
         when: latteView && updateIsEnabled && !visibilityManager.inClientSideScreenEdgeSliding
         value: {
-            if (root.behaveAsPlasmaPanel
-                    || root.viewType === LatteCore.types.PanelView
-                    || LatteCore.WindowSystem.isPlatformWayland) {
+            if (LatteCore.WindowSystem.isPlatformWayland) {
                 return 0;
             }
 
@@ -60,14 +58,7 @@ Item {
         target: latteView
         property: "type"
         when: latteView
-        value: root.viewType
-    }
-
-    Binding{
-        target: latteView
-        property: "behaveAsPlasmaPanel"
-        when: latteView
-        value: root.behaveAsPlasmaPanel
+        value: LatteCore.types.DockView
     }
 
     Binding{
@@ -243,8 +234,7 @@ Item {
                 return Qt.rect(-1, -1, 0, 0);
             }
 
-            if (root.behaveAsPlasmaPanel
-                    || !LatteCore.WindowSystem.compositingActive
+            if (!LatteCore.WindowSystem.compositingActive
                     || (!parabolic.isEnabled && root.userShowPanelBackground && plasmoid.configuration.panelSize===100)) {
                 var localGeom = latteView.localGeometry;
                 var paddingtail = background.tailRoundness + background.tailRoundnessMargin;
@@ -306,12 +296,6 @@ Item {
             //!     the view is hiding all of its screen edges. It is used mostly when the view is wanted
             //!     to act as a window titlebar.
             var thicknessForIsCapableToHideScreenGap = (root.hideThickScreenGap ? 0 : mirrorGapFactor * metrics.mask.screenEdge);
-
-            if (root.behaveAsPlasmaPanel) {
-                return isCapableToHideScreenGap ?
-                            (visibilityManager.thicknessAsPanel + thicknessForIsCapableToHideScreenGap) :
-                            (mirrorGapFactor*metrics.mask.screenEdge) + visibilityManager.thicknessAsPanel;
-            }
 
             var edgeThickness = isCapableToHideScreenGap ? thicknessForIsCapableToHideScreenGap : metrics.mask.screenEdge * mirrorGapFactor;
             return edgeThickness + metrics.mask.thickness.maxNormalForItemsWithoutScreenEdge;

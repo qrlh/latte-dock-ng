@@ -16,20 +16,13 @@
 class QAction;
 class QMenu;
 
-enum ViewType
-{
-    DockView = 0,
-    PanelView
-};
-
 struct LayoutInfo {
     QString layoutName;
     bool isBackgroundFileIcon;
     QString iconName;
 };
 
-struct ViewTypeData {
-    ViewType type{ViewType::DockView};
+struct ViewData {
     bool isCloned{true};
     int clonesCount{0};
 };
@@ -67,7 +60,7 @@ private:
     QStringList m_actionsAlwaysShown;
     QStringList m_activeLayoutNames;
 
-    ViewTypeData m_view;
+    ViewData m_view;
 
     QHash<QString, QAction *> m_actions;
 

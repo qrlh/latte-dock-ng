@@ -114,7 +114,7 @@ void Menu::restore(const KConfigGroup &config)
         }
     });*/
 
-    //! Edit Dock/Panel...
+    //! Edit Dock...
     m_actions[Latte::Data::ContextMenu::EDITVIEWACTION] = new QAction(QIcon::fromTheme("document-edit"), "Edit Dock...", this);
     connect(m_actions[Latte::Data::ContextMenu::EDITVIEWACTION], &QAction::triggered, this, &Menu::requestConfiguration);
     registerContainmentAction(this->containment(), Latte::Data::ContextMenu::EDITVIEWACTION, m_actions[Latte::Data::ContextMenu::EDITVIEWACTION], 0);
@@ -139,9 +139,9 @@ void Menu::restore(const KConfigGroup &config)
     //! Add View submenu
     m_addViewMenu = new QMenu;
     m_actions[Latte::Data::ContextMenu::ADDVIEWACTION] = m_addViewMenu->menuAction();
-    m_actions[Latte::Data::ContextMenu::ADDVIEWACTION]->setText(i18n("&Add Dock/Panel"));
+    m_actions[Latte::Data::ContextMenu::ADDVIEWACTION]->setText(i18n("&Add Dock"));
     m_actions[Latte::Data::ContextMenu::ADDVIEWACTION]->setIcon(QIcon::fromTheme("list-add"));
-    m_actions[Latte::Data::ContextMenu::ADDVIEWACTION]->setStatusTip(i18n("Add dock or panel based on specific template"));
+    m_actions[Latte::Data::ContextMenu::ADDVIEWACTION]->setStatusTip(i18n("Add dock based on specific template"));
     registerContainmentAction(this->containment(), Latte::Data::ContextMenu::ADDVIEWACTION, m_actions[Latte::Data::ContextMenu::ADDVIEWACTION], 0);
 
     connect(m_addViewMenu, &QMenu::aboutToShow, this, &Menu::populateViewTemplates);
@@ -152,7 +152,7 @@ void Menu::restore(const KConfigGroup &config)
     m_actions[Latte::Data::ContextMenu::MOVEVIEWACTION] = m_moveToLayoutMenu->menuAction();
     m_actions[Latte::Data::ContextMenu::MOVEVIEWACTION]->setText("Move To Layout");
     m_actions[Latte::Data::ContextMenu::MOVEVIEWACTION]->setIcon(QIcon::fromTheme("transform-move-horizontal"));
-    m_actions[Latte::Data::ContextMenu::MOVEVIEWACTION]->setStatusTip(i18n("Move dock or panel to different layout"));
+    m_actions[Latte::Data::ContextMenu::MOVEVIEWACTION]->setStatusTip(i18n("Move dock to different layout"));
     registerContainmentAction(this->containment(), Latte::Data::ContextMenu::MOVEVIEWACTION, m_actions[Latte::Data::ContextMenu::MOVEVIEWACTION], 0);
 
     connect(m_moveToLayoutMenu, &QMenu::aboutToShow, this, &Menu::populateMoveToLayouts);
@@ -249,24 +249,20 @@ QList<QAction *> Menu::contextualActions()
 
     updateViewData();
 
-    QString configureActionText = (m_view.type == DockView) ? i18n("&Edit Dock...") : i18n("&Edit Panel...");
+    QString configureActionText = i18n("&Edit Dock...");
     if (m_view.isCloned) {
-        configureActionText = (m_view.type == DockView) ? i18n("&Edit Original Dock...") : i18n("&Edit Original Panel...");
+        configureActionText = i18n("&Edit Original Dock...");
     }
     m_actions[Latte::Data::ContextMenu::EDITVIEWACTION]->setText(configureActionText);
 
-    const QString duplicateActionText = (m_view.type == DockView) ? i18n("&Duplicate Dock") : i18n("&Duplicate Panel");
-    m_actions[Latte::Data::ContextMenu::DUPLICATEVIEWACTION]->setText(duplicateActionText);
+    m_actions[Latte::Data::ContextMenu::DUPLICATEVIEWACTION]->setText(i18n("&Duplicate Dock"));
 
-    const QString exportTemplateText = (m_view.type == DockView) ? i18n("E&xport Dock as Template") : i18n("E&xport Panel as Template");
-    m_actions[Latte::Data::ContextMenu::EXPORTVIEWTEMPLATEACTION]->setText(exportTemplateText);
+    m_actions[Latte::Data::ContextMenu::EXPORTVIEWTEMPLATEACTION]->setText(i18n("E&xport Dock as Template"));
 
     m_activeLayoutNames = m_data[ACTIVELAYOUTSINDEX].split(";;");
-    const QString moveText = (m_view.type == DockView) ? i18n("&Move Dock To Layout") : i18n("&Move Panel To Layout");
-    m_actions[Latte::Data::ContextMenu::MOVEVIEWACTION]->setText(moveText);
+    m_actions[Latte::Data::ContextMenu::MOVEVIEWACTION]->setText(i18n("&Move Dock To Layout"));
 
-    const QString removeActionText = (m_view.type == DockView) ? i18n("&Remove Dock") : i18n("&Remove Panel");
-    m_actions[Latte::Data::ContextMenu::REMOVEVIEWACTION]->setText(removeActionText);
+    m_actions[Latte::Data::ContextMenu::REMOVEVIEWACTION]->setText(i18n("&Remove Dock"));
 
     updateVisibleActions();
 
@@ -431,7 +427,6 @@ void Menu::populateMoveToLayouts()
 void Menu::updateViewData()
 {
     QStringList vdata = m_data[VIEWTYPEINDEX].split(";;");
-    m_view.type = static_cast<ViewType>((vdata[0]).toInt());
     m_view.isCloned = vdata[1].toInt();
     m_view.clonesCount = vdata[2].toInt();
 }

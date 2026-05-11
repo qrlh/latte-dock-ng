@@ -41,8 +41,7 @@ Item {
         }
 
         if (plasmoid.location === PlasmaCore.Types.LeftEdge) {
-            var screenEdge = latteView.behaveAsPlasmaPanel ? latteView.screenEdgeMargin : 0;
-            return screenEdge + latteView.maxNormalThickness + ruler.thickness + headMargin * 2 - width/2 + height/2;
+            return latteView.maxNormalThickness + ruler.thickness + headMargin * 2 - width/2 + height/2;
         } else if (plasmoid.location === PlasmaCore.Types.RightEdge) {
             return headMargin - width/2 + height/2;
         }
@@ -65,7 +64,7 @@ Item {
         visible: root.isVertical
 
         text: i18n("Stick On Top");
-        tooltip: i18n("Stick maximum available space at top screen edge and ignore any top docks or panels")
+        tooltip: i18n("Stick maximum available space at top screen edge and ignore any top docks")
         checked: plasmoid.configuration.isStickedOnTopEdge
         iconPositionReversed: (plasmoid.location === PlasmaCore.Types.RightEdge)
 
@@ -124,7 +123,7 @@ Item {
         visible: root.isVertical
 
         text: i18n("Stick On Bottom");
-        tooltip: i18n("Stick maximum available space at bottom screen edge and ignore any bottom docks or panels")
+        tooltip: i18n("Stick maximum available space at bottom screen edge and ignore any bottom docks")
         checked: plasmoid.configuration.isStickedOnBottomEdge
         iconPositionReversed: (plasmoid.location !== PlasmaCore.Types.RightEdge)
 

@@ -45,7 +45,7 @@ ExportTemplateDialog::ExportTemplateDialog(ViewsDialog *parent, const Data::View
     m_corona = parent->corona();
 
     init();
-    initExportButton(i18n("Export your selected dock or panel as template"));
+    initExportButton(i18n("Export your selected dock as template"));
     //! we must create handlers after creating/adjusting the ui
     m_handler = new Handler::ExportTemplateHandler(this, view);
     initSignals();

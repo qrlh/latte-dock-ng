@@ -13,28 +13,12 @@ import org.kde.ksvg 1.0 as KSvg
 KSvg.FrameSvgItem {
     id: root
 
-    imagePath: {
-        if (!containment) {
-            return "";
-        }
-
-        // Latte draws dock background inside the containment itself.
-        // Keep shell frame background only for true panel mode.
-        if (containment.behaveAsPlasmaPanel !== undefined) {
-            return containment.behaveAsPlasmaPanel ? "widgets/panel-background" : "";
-        }
-
-        return containment.backgroundHints === PlasmaCore.Types.NoBackground ? "" : "widgets/panel-background";
-    }
-    //imagePath: "widgets/panel-background"
-    //imagePath: ""
-    prefix:""
-    // onRepaintNeeded: adjustPrefix();
+    // Latte draws dock background inside the containment itself.
+    imagePath: ""
+    prefix: ""
 
     property Item containment
     property Item viewLayout
-
-    readonly property bool verticalPanel: containment && containment.formFactor === PlasmaCore.Types.Vertical
 
     /*  Rectangle{
         anchors.fill: parent
@@ -43,40 +27,8 @@ KSvg.FrameSvgItem {
         border.width: 1
     }*/
 
-    function adjustPrefix() {
-        if (!containment) {
-            return "";
-        }
-        var pre;
-        switch (containment.location) {
-        case PlasmaCore.Types.LeftEdge:
-            pre = "west";
-            break;
-        case PlasmaCore.Types.TopEdge:
-            pre = "north";
-            break;
-        case PlasmaCore.Types.RightEdge:
-            pre = "east";
-            break;
-        case PlasmaCore.Types.BottomEdge:
-            pre = "south";
-            break;
-        default:
-            prefix = "";
-        }
-        if (hasElementPrefix(pre)) {
-            prefix = pre;
-        } else {
-            prefix = "";
-        }
-    }
-
     Component.onDestruction: {
         console.log("latte view qml source deleting...");
-
-        if (containment && containment.locationChanged && typeof containment.locationChanged.disconnect === "function") {
-            containment.locationChanged.disconnect(adjustPrefix);
-        }
     }
 
     onContainmentChanged: {
@@ -89,11 +41,6 @@ KSvg.FrameSvgItem {
         containment.parent = containmentParent;
         containment.visible = true;
         containment.anchors.fill = containmentParent;
-        if (containment.locationChanged && typeof containment.locationChanged.connect === "function") {
-            containment.locationChanged.connect(adjustPrefix);
-        }
-        adjustPrefix();
-
         for(var i=0; i<containment.children.length; ++i){
             if (containment.children[i].objectName === "containmentViewLayout") {
                 viewLayout = containment.children[i];

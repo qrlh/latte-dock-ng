@@ -292,7 +292,7 @@ Item {
         horizontalAlignment: Text.AlignHCenter
         //  font.bold: true
         font.italic: true
-        font.pointSize: 1.2 * theme.defaultFont.pointSize
+        font.pixelSize: Math.max(1, Math.round(1.2 * theme.defaultFont.pixelSize))
 
         wrapMode: Text.WordWrap
     }

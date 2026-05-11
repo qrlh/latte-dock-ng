@@ -47,7 +47,7 @@ AbilityHost.Metrics {
         lengthAppletPadding: indicators.isEnabled ? indicators.info.appletLengthPadding : -1
     }
 
-    //! based on background / plasma theme minimum thickness requirements; behaveAsPlasmaPanel and floating is a good scenario for this
+    //! based on background / plasma theme minimum thickness requirements; floating is a good scenario for this
     readonly property int marginMinThickness: Math.max(0, (background.totals.minThickness - _maxIconSize) / 2)
 
     readonly property int maxThicknessForView: Math.max(mask.maxScreenEdge + ((maxIconSize+2*margin.maxTailThickness)*2) + extraThicknessForZoomed,
@@ -89,7 +89,6 @@ AbilityHost.Metrics {
         }
 
         Behavior on screenEdge {
-            enabled: !root.behaveAsPlasmaPanel
             NumberAnimation {
                 duration: 0.8 * animations.duration.proposed
                 easing.type: Easing.OutCubic

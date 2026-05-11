@@ -30,8 +30,7 @@ Ability.MetricsPrivate {
     margin.maxHeadThickness: (background.isGreaterThanItemThickness ? (background.totals.visualMaxThickness - _maxIconSize - margin.maxTailThickness) : margin.maxTailThickness)
     //margin.thickness: fraction.thicknessMargin * iconSize
    // margin.maxThickness: fraction.thicknessMargin * maxIconSize
-    margin.screenEdge: (root.screenEdgeMarginEnabled && root.behaveAsPlasmaPanel)
-                       || !root.screenEdgeMarginEnabled
+    margin.screenEdge: !root.screenEdgeMarginEnabled
                        || root.hideThickScreenGap ?
                            0 : plasmoid.configuration.screenEdgeMargin
 
@@ -75,7 +74,7 @@ Ability.MetricsPrivate {
     }
 
     //! Mask
-    mask.maxScreenEdge : root.behaveAsDockWithMask ? Math.max(0, plasmoid.configuration.screenEdgeMargin) : 0
+    mask.maxScreenEdge : Math.max(0, plasmoid.configuration.screenEdgeMargin)
       // window geometry is updated after the local screen margin animation was zeroed*/
     mask.screenEdge: (!root.screenEdgeMarginEnabled || root.hideThickScreenGap) ? 0 : plasmoid.configuration.screenEdgeMargin
 

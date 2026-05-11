@@ -15,8 +15,7 @@ Item {
 
     // when there are only plasma style task managers OR any applets that fill width or height
     // the automatic icon size algorithm should better be disabled
-    readonly property bool isActive: root.behaveAsDockWithMask
-                                     && plasmoid.configuration.autoSizeEnabled
+    readonly property bool isActive: plasmoid.configuration.autoSizeEnabled
                                      && !root.containsOnlyPlasmaTasks
                                      && layouter.fillApplets<=0
                                      && !(root.inConfigureAppletsMode && plasmoid.configuration.alignment === LatteCore.types.Justify) /*block shrinking for justify splitters*/

@@ -9,12 +9,54 @@ import QtQuick.Layouts 1.3
 import org.kde.plasma.plasmoid 2.0
 import org.kde.plasma.core 2.0 as PlasmaCore
 import org.kde.plasma.components 3.0 as PlasmaComponents
+import org.kde.kirigami 2.0 as Kirigami
 
 import org.kde.latte.components 1.0 as LatteComponents
 
 ColumnLayout {
     id: root
     Layout.fillWidth: true
+    Kirigami.Theme.inherit: false
+    Kirigami.Theme.colorSet: Kirigami.Theme.Window
+    SystemPalette {
+        id: systemPalette
+        colorGroup: SystemPalette.Active
+    }
+    readonly property color cfgBackgroundColor: (typeof dialog !== "undefined" && dialog && dialog.bC !== undefined) ? dialog.bC : systemPalette.window
+    readonly property color cfgTextColor: (typeof dialog !== "undefined" && dialog && dialog.tC !== undefined) ? dialog.tC : systemPalette.windowText
+    readonly property color cfgHighlightColor: (typeof dialog !== "undefined" && dialog && dialog.hC !== undefined) ? dialog.hC : ((typeof dialog !== "undefined" && dialog && dialog.theme && dialog.theme.highlightColor !== undefined) ? dialog.theme.highlightColor : systemPalette.highlight)
+    readonly property color cfgHighlightedTextColor: (typeof dialog !== "undefined" && dialog && dialog.htC !== undefined) ? dialog.htC : ((typeof dialog !== "undefined" && dialog && dialog.theme && dialog.theme.highlightedTextColor !== undefined) ? dialog.theme.highlightedTextColor : systemPalette.highlightedText)
+    Kirigami.Theme.backgroundColor: cfgBackgroundColor
+    Kirigami.Theme.textColor: cfgTextColor
+    Kirigami.Theme.highlightColor: cfgHighlightColor
+    Kirigami.Theme.highlightedTextColor: cfgHighlightedTextColor
+
+    readonly property var units: Kirigami.Units
+    readonly property bool hasIndicatorConfig: (typeof indicator !== "undefined") && indicator && indicator.configuration
+    property var indicatorConfigFallback: ({
+        lengthPadding: 0.08,
+        backgroundCornerMargin: 1.00,
+        clickedAnimationEnabled: true
+    })
+    readonly property var indicatorConfig: hasIndicatorConfig ? indicator.configuration : indicatorConfigFallback
+    readonly property int valueLabelWidth: 4 * units.gridUnit
+
+    function configBool(value, fallback) {
+        if (value === undefined || value === null) {
+            return fallback;
+        }
+
+        return !!value;
+    }
+
+    function configReal(value, fallback) {
+        if (value === undefined || value === null) {
+            return fallback;
+        }
+
+        var numeric = Number(value);
+        return isNaN(numeric) ? fallback : numeric;
+    }
 
     LatteComponents.SubHeader {
         text: i18n("Style")
@@ -33,7 +75,7 @@ ColumnLayout {
             id: lengthIntMarginSlider
             Layout.fillWidth: true
 
-            value: Math.round(indicator.configuration.lengthPadding * 100)
+            value: Math.round(root.configReal(root.indicatorConfig.lengthPadding, root.indicatorConfigFallback.lengthPadding) * 100)
             from: 0
             to: maxMargin
             stepSize: 1
@@ -43,7 +85,7 @@ ColumnLayout {
 
             onPressedChanged: {
                 if (!pressed) {
-                    indicator.configuration.lengthPadding = value / 100;
+                    root.indicatorConfig.lengthPadding = value / 100;
                 }
             }
         }
@@ -51,8 +93,8 @@ ColumnLayout {
         PlasmaComponents.Label {
             text: i18nc("number in percentage, e.g. 85 %","%1 %", currentValue)
             horizontalAlignment: Text.AlignRight
-            Layout.minimumWidth: theme.mSize(theme.defaultFont).width * 4
-            Layout.maximumWidth: theme.mSize(theme.defaultFont).width * 4
+            Layout.minimumWidth: root.valueLabelWidth
+            Layout.maximumWidth: root.valueLabelWidth
 
             readonly property int currentValue: lengthIntMarginSlider.value
         }
@@ -71,7 +113,7 @@ ColumnLayout {
             id: backgroundCornerMarginSlider
             Layout.fillWidth: true
 
-            value: Math.round(indicator.configuration.backgroundCornerMargin * 100)
+            value: Math.round(root.configReal(root.indicatorConfig.backgroundCornerMargin, root.indicatorConfigFallback.backgroundCornerMargin) * 100)
             from: 0
             to: 100
             stepSize: 1
@@ -79,7 +121,7 @@ ColumnLayout {
 
             onPressedChanged: {
                 if (!pressed) {
-                    indicator.configuration.backgroundCornerMargin = value / 100;
+                    root.indicatorConfig.backgroundCornerMargin = value / 100;
                 }
             }
         }
@@ -87,8 +129,8 @@ ColumnLayout {
         PlasmaComponents.Label {
             text: i18nc("number in percentage, e.g. 85 %","%1 %", currentValue)
             horizontalAlignment: Text.AlignRight
-            Layout.minimumWidth: theme.mSize(theme.defaultFont).width * 4
-            Layout.maximumWidth: theme.mSize(theme.defaultFont).width * 4
+            Layout.minimumWidth: root.valueLabelWidth
+            Layout.maximumWidth: root.valueLabelWidth
 
             readonly property int currentValue: backgroundCornerMarginSlider.value
         }
@@ -114,10 +156,10 @@ ColumnLayout {
         LatteComponents.CheckBox {
             Layout.maximumWidth: dialog.optionsWidth
             text: i18n("Growing circle animation when clicked")
-            value: indicator.configuration.clickedAnimationEnabled
+            value: root.configBool(root.indicatorConfig.clickedAnimationEnabled, root.indicatorConfigFallback.clickedAnimationEnabled)
 
             onClicked: {
-                indicator.configuration.clickedAnimationEnabled = !indicator.configuration.clickedAnimationEnabled;
+                root.indicatorConfig.clickedAnimationEnabled = !root.configBool(root.indicatorConfig.clickedAnimationEnabled, root.indicatorConfigFallback.clickedAnimationEnabled);
             }
         }
 

@@ -4,12 +4,13 @@
     SPDX-License-Identifier: GPL-2.0-or-later
 */
 
-import QtQuick 2.7
+import QtQuick 2.15
 import QtQuick.Layouts 1.1
 import org.kde.plasma.plasmoid 2.0
 import org.kde.plasma.core 2.0 as PlasmaCore
 import org.kde.plasma.components 3.0 as PlasmaComponents
 import org.kde.kquickcontrolsaddons 2.0
+import org.kde.taskmanager 0.1 as TaskManager
 
 import org.kde.latte.core 0.2 as LatteCore
 import org.kde.latte.components 1.0 as LatteComponents
@@ -24,6 +25,7 @@ Item {
     id: appletItem
     width: isInternalViewSplitter && !root.inConfigureAppletsMode ? 0 : computeWidth
     height: isInternalViewSplitter && !root.inConfigureAppletsMode ? 0 : computeHeight
+    z: isSortDragging ? 1600 : (externalAppletDrawsAboveTasks ? 1000 : 0)
 
     //any applets that exceed their limits should not take events from their surrounding applets
     //clip: !isSeparator && !parabolicAreaLoader.active
@@ -76,6 +78,23 @@ Item {
                                                        && root.dragOverlay.pressed
 
     property bool appletBlocksColorizing: !communicator.requires.latteSideColoringEnabled || communicator.indexerIsSupported
+    readonly property bool isExternalPlasmaApplet: pluginName !== ""
+                                                 && !isInternalViewSplitter
+                                                 && !indexerIsSupported
+                                                 && pluginName.indexOf("org.kde.latte.") !== 0
+                                                 && pluginName.indexOf("audoban.applet.") !== 0
+    readonly property bool externalAppletDrawsAboveTasks: isExternalPlasmaApplet
+                                                          && !isSeparator
+                                                          && !isSpacer
+                                                          && !isSystray
+    readonly property bool keepVisibleOnHiddenStatus: externalAppletDrawsAboveTasks
+    readonly property bool externalAppletHasStableNativeSizing: applet
+                                                               && applet.Layout
+                                                               && applet.Layout.preferredWidth > 0
+                                                               && applet.Layout.preferredHeight > 0
+    readonly property bool externalAppletUsesFixedSlotSizing: externalAppletDrawsAboveTasks
+                                                             && !communicator.appletMainIconIsFound
+                                                             && !externalAppletHasStableNativeSizing
     property bool appletBlocksParabolicEffect: communicator.requires.parabolicEffectLocked
     readonly property bool lockZoom: !parabolicEffectIsSupported
                                      || appletBlocksParabolicEffect
@@ -83,23 +102,53 @@ Item {
     readonly property bool userBlocksColorizing: appletBlocksColorizing
                                                  || (fastLayoutManager && applet && (fastLayoutManager.userBlocksColorizingApplets.indexOf(applet.id)>=0))
 
-    property bool isActive: (isExpanded
-                             && !appletItem.communicator.indexerIsSupported
-                             && applet.pluginName !== "org.kde.activeWindowControl"
-                             && applet.pluginName !== "org.kde.plasma.appmenu")
+    property bool isExpandedIndicatorActive: (isExpanded
+                                              && !appletItem.communicator.indexerIsSupported
+                                              && pluginName !== "org.kde.activeWindowControl"
+                                              && pluginName !== "org.kde.plasma.appmenu")
+
+    property int trackedWindowsCount: 0
+    property int trackedShownWindowsCount: 0
+    property int trackedActiveWindowsCount: 0
+
+    readonly property bool hasTrackedShownWindow: trackedShownWindowsCount > 0
+    readonly property bool hasTrackedActiveWindow: trackedActiveWindowsCount > 0
+    readonly property bool hasTrackedMinimizedWindow: trackedWindowsCount > trackedShownWindowsCount
+
+    property bool isActive: isExpandedIndicatorActive || hasTrackedActiveWindow
+    property bool hasActiveIndicator: isActive
+    property bool hasShownIndicator: isExpandedIndicatorActive || hasTrackedShownWindow
+
+    property var trackedWindowAppIds: []
+
+    readonly property var fallbackTrackedWindowAppIdsByPlugin: ({
+        "org.kde.plasma.trash": ["org.kde.dolphin"],
+        "org.kde.plasma.folder": ["org.kde.dolphin"]
+    })
 
     property bool isExpanded: false
 
     property bool isScheduledForDestruction: (fastLayoutManager && applet && fastLayoutManager.appletsInScheduledDestruction.indexOf(applet.id)>=0)
-    property bool isHidden: (!root.inConfigureAppletsMode && ((applet && applet.status === PlasmaCore.Types.HiddenStatus ) || isInternalViewSplitter)) || isScheduledForDestruction
+    property bool isSortDragging: appletSortDragHandler.active
+    property bool sortDragMoved: false
+    property Item sortDragLastTarget: null
+    property bool sortDragLastInsertBefore: false
+    property real sortDragLastCommitTs: 0
+    property bool isHidden: (!root.inConfigureAppletsMode
+                             && (((applet
+                                   && applet.status === PlasmaCore.Types.HiddenStatus
+                                   && !keepVisibleOnHiddenStatus)
+                                  || isInternalViewSplitter)))
+                            || isScheduledForDestruction
     property bool isInternalViewSplitter: (internalSplitterId > 0)
     property bool isZoomed: false
     property bool isPlaceHolder: false
     property bool isPressed: viewSignalsConnector.pressed
-    property bool isSeparator: applet && (applet.pluginName === "audoban.applet.separator"
-                                          || applet.pluginName === "org.kde.latte.separator")
-    property bool isSpacer: applet && (applet.pluginName === "org.kde.latte.spacer")
-    property bool isSystray: applet && (applet.pluginName === "org.kde.plasma.systemtray" || applet.pluginName === "org.nomad.systemtray" )
+    property QtObject backendAppletRef: null
+    property bool isSeparator: pluginName === "audoban.applet.separator"
+                               || pluginName === "org.kde.latte.separator"
+    property bool isSpacer: pluginName === "org.kde.latte.spacer"
+    property bool isSystray: pluginName === "org.kde.plasma.systemtray" || pluginName === "org.nomad.systemtray"
 
     property bool firstChildOfStartLayout: index === appletItem.layouter.startLayout.firstVisibleIndex
     property bool firstChildOfMainLayout: index === appletItem.layouter.mainLayout.firstVisibleIndex
@@ -176,10 +225,7 @@ Item {
     //! For Latte docks things are a bit more complicated. Applets that can not support parabolic effect inside docks
     //! are presenting their original plasma behavior and also applets that even though can be zoomed user has chose
     //! to lock its parabolic effect.
-    readonly property bool originalAppletBehavior: root.behaveAsPlasmaPanel
-                                                   || !parabolicEffectIsSupported
-                                                   || (root.behaveAsDockWithMask && !parabolicEffectIsSupported)
-                                                   || (root.behaveAsDockWithMask && parabolicEffectIsSupported && lockZoom)
+    readonly property bool originalAppletBehavior: !parabolicEffectIsSupported || lockZoom
 
     readonly property bool isIndicatorDrawn: indicatorBackLayer.level.isDrawn
     readonly property bool isSquare: parabolicEffectIsSupported
@@ -190,6 +236,8 @@ Item {
     property int maxWidth: root.isHorizontal ? root.height : root.width
     property int maxHeight: root.isHorizontal ? root.height : root.width
     property int internalSplitterId: 0
+    property int sortDragCommitCooldownMs: 90
+    property real sortDragCenterDeadZoneRatio: 0.18
 
     property int previousIndex: -1
     property int spacersMaxSize: Math.max(0,Math.ceil(0.55 * metrics.iconSize) - metrics.totals.lengthEdges)
@@ -288,7 +336,18 @@ Item {
     property int internalWidthMargins: root.isVertical ? metrics.totals.thicknessEdges : 2 * lengthAppletPadding
     property int internalHeightMargins: root.isHorizontal ? root.metrics.totals.thicknessEdges : 2 * lengthAppletPadding
 
-    readonly property string pluginName: isInternalViewSplitter ? "org.kde.latte.splitter" : ((applet && applet.pluginName !== undefined) ? applet.pluginName : "")
+    property string sourceAppletPluginName: ""
+    readonly property string pluginName: {
+        if (isInternalViewSplitter) {
+            return "org.kde.latte.splitter";
+        }
+
+        if (sourceAppletPluginName !== "") {
+            return sourceAppletPluginName;
+        }
+
+        return (applet && applet.pluginName !== undefined) ? applet.pluginName : "";
+    }
 
     //! are set by the indicator
     readonly property int iconOffsetX: indicatorBackLayer.level.requested.iconOffsetX
@@ -305,7 +364,7 @@ Item {
                                                    wrapper.height
 
     property Item applet: null
-    property Item latteStyleApplet: applet && ((applet.pluginName === "org.kde.latte.spacer") || (applet.pluginName === "org.kde.latte.separator")) ?
+    property Item latteStyleApplet: applet && ((pluginName === "org.kde.latte.spacer") || (pluginName === "org.kde.latte.separator")) ?
                                         (applet.children[0] ? applet.children[0] : null) : null
 
     property Item appletWrapper: wrapper.wrapperContainer
@@ -443,6 +502,547 @@ Item {
     //// END :: Animate Applet when a new applet is dragged in the view
 
     /// BEGIN functions
+    function isSortCandidate(item) {
+        return item
+                && item !== appletItem
+                && item.externalAppletDrawsAboveTasks
+                && !item.isParabolicEdgeSpacer
+                && !item.isPlaceHolder
+                && !item.isScheduledForDestruction
+                && !item.isHidden
+                && !item.isInternalViewSplitter;
+    }
+
+    function isSortBoundaryItem(item) {
+        return item
+                && item !== appletItem
+                && !item.isParabolicEdgeSpacer
+                && !item.isPlaceHolder
+                && !item.isScheduledForDestruction
+                && !item.isHidden
+                && !item.isInternalViewSplitter
+                && (item.pluginName === "org.kde.latte.plasmoid" || item.indexerIsSupported);
+    }
+
+    function normalizeTrackedAppId(rawId) {
+        var value = String(rawId || "").trim().toLowerCase();
+
+        if (value.indexOf("applications:") === 0) {
+            value = value.substring("applications:".length);
+        }
+
+        if (value.indexOf("file://") === 0) {
+            var slash = value.lastIndexOf("/");
+            if (slash >= 0 && slash < (value.length - 1)) {
+                value = value.substring(slash + 1);
+            }
+        }
+
+        var query = value.indexOf("?");
+        if (query >= 0) {
+            value = value.substring(0, query);
+        }
+
+        if (value.indexOf(".desktop") === (value.length - 8)) {
+            value = value.substring(0, value.length - 8);
+        }
+
+        return value;
+    }
+
+    function appendTrackedAppId(ids, rawId) {
+        var normalized = normalizeTrackedAppId(rawId);
+        if (!normalized || normalized.length === 0) {
+            return;
+        }
+
+        if (ids.indexOf(normalized) < 0) {
+            ids.push(normalized);
+        }
+    }
+
+    function appIdFromLauncherUrl(launcherUrl) {
+        var normalized = normalizeTrackedAppId(launcherUrl);
+
+        if (normalized.indexOf("preferred://") === 0) {
+            // preferred:// URLs are runtime-resolved by component chooser and
+            // can't be mapped to a stable app id at this layer.
+            return "";
+        }
+
+        return normalized;
+    }
+
+    function appletConfiguredLauncherUrl() {
+        if (!applet || !applet.configuration) {
+            return "";
+        }
+
+        var candidate = "";
+        var keys = ["launcherUrl", "url", "application", "app", "command"];
+
+        for (var i = 0; i < keys.length; ++i) {
+            var key = keys[i];
+            if (typeof applet.configuration[key] !== "undefined" && applet.configuration[key] !== null) {
+                candidate = String(applet.configuration[key]);
+                if (candidate.length > 0) {
+                    return candidate;
+                }
+            }
+        }
+
+        return "";
+    }
+
+    function resolveTrackedWindowAppIds() {
+        var ids = [];
+
+        if (fallbackTrackedWindowAppIdsByPlugin[pluginName] !== undefined) {
+            var pluginIds = fallbackTrackedWindowAppIdsByPlugin[pluginName];
+            for (var i = 0; i < pluginIds.length; ++i) {
+                appendTrackedAppId(ids, pluginIds[i]);
+            }
+        }
+
+        if (applet) {
+            appendTrackedAppId(ids, applet.appId);
+            appendTrackedAppId(ids, applet.applicationId);
+            appendTrackedAppId(ids, applet.desktopEntryName);
+            appendTrackedAppId(ids, applet.desktopFileName);
+            appendTrackedAppId(ids, applet.defaultApplication);
+            appendTrackedAppId(ids, applet.launcherUrl);
+            appendTrackedAppId(ids, applet.url);
+
+            var launcherUrl = appletConfiguredLauncherUrl();
+            appendTrackedAppId(ids, appIdFromLauncherUrl(launcherUrl));
+        }
+
+        return ids;
+    }
+
+    function refreshTrackedWindowAppIds() {
+        trackedWindowAppIds = resolveTrackedWindowAppIds();
+
+        if (trackedWindowAppIds.length === 0) {
+            trackedWindowsCount = 0;
+            trackedShownWindowsCount = 0;
+            trackedActiveWindowsCount = 0;
+            trackedWindowsStateDebouncer.stop();
+            return;
+        }
+
+        scheduleTrackedWindowsStateRefresh();
+    }
+
+    function scheduleTrackedWindowsStateRefresh() {
+        if (!trackedWindowsModelLoader.active) {
+            trackedWindowsCount = 0;
+            trackedShownWindowsCount = 0;
+            trackedActiveWindowsCount = 0;
+            trackedWindowsStateDebouncer.stop();
+            return;
+        }
+
+        trackedWindowsStateDebouncer.restart();
+    }
+
+    function recomputeTrackedWindowsState() {
+        if (!trackedWindowsModelLoader.active || !trackedWindowsModelLoader.item || trackedWindowAppIds.length === 0) {
+            trackedWindowsCount = 0;
+            trackedShownWindowsCount = 0;
+            trackedActiveWindowsCount = 0;
+            return;
+        }
+
+        var model = trackedWindowsModelLoader.item.trackedTasksModel;
+        var roles = trackedWindowsModelLoader.item.taskRoles;
+
+        if (!model || !roles) {
+            trackedWindowsCount = 0;
+            trackedShownWindowsCount = 0;
+            trackedActiveWindowsCount = 0;
+            return;
+        }
+
+        var windowsCount = 0;
+        var shownCount = 0;
+        var activeCount = 0;
+
+        for (var i = 0; i < model.count; ++i) {
+            var modelIndex = model.makeModelIndex(i);
+
+            if (!modelIndex) {
+                continue;
+            }
+
+            var appId = normalizeTrackedAppId(model.data(modelIndex, roles.AppId));
+            if (trackedWindowAppIds.indexOf(appId) < 0) {
+                continue;
+            }
+
+            if (model.data(modelIndex, roles.IsWindow) !== true || model.data(modelIndex, roles.IsStartup) === true) {
+                continue;
+            }
+
+            windowsCount = windowsCount + 1;
+
+            if (model.data(modelIndex, roles.IsActive) === true) {
+                activeCount = activeCount + 1;
+            }
+
+            if (model.data(modelIndex, roles.IsMinimized) !== true) {
+                shownCount = shownCount + 1;
+            }
+        }
+
+        trackedWindowsCount = windowsCount;
+        trackedShownWindowsCount = shownCount;
+        trackedActiveWindowsCount = activeCount;
+    }
+
+    function shouldDelaySortCommit(targetItem, insertBefore) {
+        var now = Date.now();
+        if (targetItem === sortDragLastTarget
+                && insertBefore === sortDragLastInsertBefore
+                && (now - sortDragLastCommitTs) < sortDragCommitCooldownMs) {
+            return true;
+        }
+
+        sortDragLastTarget = targetItem;
+        sortDragLastInsertBefore = insertBefore;
+        sortDragLastCommitTs = now;
+        return false;
+    }
+
+    function resetSortDragHistory() {
+        sortDragLastTarget = null;
+        sortDragLastInsertBefore = false;
+        sortDragLastCommitTs = 0;
+    }
+
+    function bestSortCandidateInLayout(layout, rootX, rootY) {
+        if (!layout) {
+            return null;
+        }
+
+        var bestItem = null;
+        var bestDistance = Number.POSITIVE_INFINITY;
+        var children = layout.children;
+
+        for (var i = 0; i < children.length; ++i) {
+            var child = children[i];
+
+            if (!isSortCandidate(child)) {
+                continue;
+            }
+
+            var local = child.mapFromItem(root, rootX, rootY);
+            var inCrossAxis = root.isVertical
+                    ? (local.x >= 0 && local.x <= child.width)
+                    : (local.y >= 0 && local.y <= child.height);
+
+            if (!inCrossAxis) {
+                continue;
+            }
+
+            var childLength = root.isVertical ? child.height : child.width;
+            var localMain = root.isVertical ? local.y : local.x;
+
+            // Include half an item of tolerance so dragging through a visible
+            // gap between zoomed applets still selects the nearest neighbour.
+            if (localMain < (-childLength / 2) || localMain > (childLength * 1.5)) {
+                continue;
+            }
+
+            var distance = Math.abs(localMain - (childLength / 2));
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                bestItem = child;
+            }
+        }
+
+        return bestItem;
+    }
+
+    function bestSortBoundaryInLayout(layout, rootX, rootY) {
+        if (!layout) {
+            return null;
+        }
+
+        var bestItem = null;
+        var bestDistance = Number.POSITIVE_INFINITY;
+        var children = layout.children;
+
+        for (var i = 0; i < children.length; ++i) {
+            var child = children[i];
+
+            if (!isSortBoundaryItem(child)) {
+                continue;
+            }
+
+            var local = child.mapFromItem(root, rootX, rootY);
+            var inCrossAxis = root.isVertical
+                    ? (local.x >= 0 && local.x <= child.width)
+                    : (local.y >= 0 && local.y <= child.height);
+
+            if (!inCrossAxis) {
+                continue;
+            }
+
+            var childLength = root.isVertical ? child.height : child.width;
+            var localMain = root.isVertical ? local.y : local.x;
+
+            if (localMain < (-childLength / 2) || localMain > (childLength * 1.5)) {
+                continue;
+            }
+
+            var distance = Math.abs(localMain - (childLength / 2));
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                bestItem = child;
+            }
+        }
+
+        return bestItem;
+    }
+
+    function isPointInLayoutMainAxis(layout, rootX, rootY, tolerance) {
+        if (!layout) {
+            return false;
+        }
+
+        var local = layout.mapFromItem(root, rootX, rootY);
+
+        if (root.isVertical) {
+            return local.y >= -tolerance && local.y <= layout.height + tolerance;
+        }
+
+        return local.x >= -tolerance && local.x <= layout.width + tolerance;
+    }
+
+    function sideLayoutForSortDrop(rootX, rootY) {
+        if (root.myView.alignment !== LatteCore.types.Justify) {
+            return null;
+        }
+
+        var tolerance = Math.max(width, height);
+
+        if (isPointInLayoutMainAxis(layoutsContainer.startLayout, rootX, rootY, tolerance)) {
+            return layoutsContainer.startLayout;
+        }
+
+        if (isPointInLayoutMainAxis(layoutsContainer.endLayout, rootX, rootY, tolerance)) {
+            return layoutsContainer.endLayout;
+        }
+
+        var mainLayout = layoutsContainer.mainLayout;
+        var mainLocal = mainLayout.mapFromItem(root, rootX, rootY);
+        var mainLength = root.isVertical ? mainLayout.height : mainLayout.width;
+        var mainPosition = root.isVertical ? mainLocal.y : mainLocal.x;
+
+        if (mainPosition < -tolerance || mainPosition > mainLength + tolerance) {
+            return null;
+        }
+
+        return mainPosition < (mainLength / 2) ? layoutsContainer.startLayout : layoutsContainer.endLayout;
+    }
+
+    function insertAtSideLayoutEdge(layout) {
+        if (!layout) {
+            return false;
+        }
+
+        var children = layout.children;
+
+        if (layout === layoutsContainer.startLayout) {
+            for (var i = children.length - 1; i >= 0; --i) {
+                if (children[i].isInternalViewSplitter) {
+                    fastLayoutManager.insertBefore(children[i], appletItem);
+                    return true;
+                }
+            }
+
+            if (children.length > 0) {
+                fastLayoutManager.insertAfter(children[children.length - 1], appletItem);
+                return true;
+            }
+        } else if (layout === layoutsContainer.endLayout) {
+            for (var j = 0; j < children.length; ++j) {
+                if (children[j].isInternalViewSplitter) {
+                    fastLayoutManager.insertAfter(children[j], appletItem);
+                    return true;
+                }
+            }
+
+            if (children.length > 0) {
+                fastLayoutManager.insertBefore(children[0], appletItem);
+                return true;
+            }
+        }
+
+        appletItem.parent = layout;
+        return true;
+    }
+
+    function sortCandidateAt(rootX, rootY) {
+        var bestItem = null;
+        var bestDistance = Number.POSITIVE_INFINITY;
+        var layouts = root.myView.alignment === LatteCore.types.Justify
+                ? [layoutsContainer.startLayout, layoutsContainer.mainLayout, layoutsContainer.endLayout]
+                : [layoutsContainer.mainLayout];
+
+        for (var i = 0; i < layouts.length; ++i) {
+            var candidate = bestSortCandidateInLayout(layouts[i], rootX, rootY);
+
+            if (!candidate) {
+                continue;
+            }
+
+            var local = candidate.mapFromItem(root, rootX, rootY);
+            var distance = root.isVertical
+                    ? Math.abs(local.y - (candidate.height / 2))
+                    : Math.abs(local.x - (candidate.width / 2));
+
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                bestItem = candidate;
+            }
+        }
+
+        return bestItem;
+    }
+
+    function sortBoundaryAt(rootX, rootY) {
+        var bestItem = null;
+        var bestDistance = Number.POSITIVE_INFINITY;
+        var layouts = [layoutsContainer.startLayout, layoutsContainer.mainLayout, layoutsContainer.endLayout];
+
+        for (var i = 0; i < layouts.length; ++i) {
+            var boundary = bestSortBoundaryInLayout(layouts[i], rootX, rootY);
+
+            if (!boundary) {
+                continue;
+            }
+
+            var local = boundary.mapFromItem(root, rootX, rootY);
+            var distance = root.isVertical
+                    ? Math.abs(local.y - (boundary.height / 2))
+                    : Math.abs(local.x - (boundary.width / 2));
+
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                bestItem = boundary;
+            }
+        }
+
+        return bestItem;
+    }
+
+    function updateSortDrag(rootX, rootY) {
+        if (!fastLayoutManager || (!sortDragMoved && !appletSortDragHandler.active)) {
+            return;
+        }
+
+        var target = sortCandidateAt(rootX, rootY);
+        var originalParent = appletItem.parent;
+        var insertedAtSideEdge = false;
+        var insertedAtBoundary = false;
+
+        if (target) {
+            var local = target.mapFromItem(root, rootX, rootY);
+            var targetMainSize = root.isVertical ? target.height : target.width;
+            var targetMainPos = root.isVertical ? local.y : local.x;
+            var targetMainRatio = targetMainSize > 0 ? targetMainPos / targetMainSize : 0.5;
+
+            // Keep a small dead zone around center so drag movement has to be
+            // deliberate before crossing neighbors. This makes dropping between
+            // two applets much easier with zoomed icons.
+            if (targetMainRatio >= (0.5 - sortDragCenterDeadZoneRatio)
+                    && targetMainRatio <= (0.5 + sortDragCenterDeadZoneRatio)) {
+                return;
+            }
+
+            var insertBeforeTarget = targetMainRatio < 0.5;
+            if (shouldDelaySortCommit(target, insertBeforeTarget)) {
+                return;
+            }
+
+            if (insertBeforeTarget) {
+                fastLayoutManager.insertBefore(target, appletItem);
+            } else {
+                fastLayoutManager.insertAfter(target, appletItem);
+            }
+        } else {
+            var boundary = sortBoundaryAt(rootX, rootY);
+
+            if (boundary) {
+                var boundaryLocal = boundary.mapFromItem(root, rootX, rootY);
+                var boundaryMainSize = root.isVertical ? boundary.height : boundary.width;
+                var boundaryMainPos = root.isVertical ? boundaryLocal.y : boundaryLocal.x;
+                var boundaryMainRatio = boundaryMainSize > 0 ? boundaryMainPos / boundaryMainSize : 0.5;
+
+                if (boundaryMainRatio >= (0.5 - sortDragCenterDeadZoneRatio)
+                        && boundaryMainRatio <= (0.5 + sortDragCenterDeadZoneRatio)) {
+                    return;
+                }
+
+                var insertBeforeBoundary = boundaryMainRatio < 0.5;
+                if (shouldDelaySortCommit(boundary, insertBeforeBoundary)) {
+                    return;
+                }
+
+                if (insertBeforeBoundary) {
+                    fastLayoutManager.insertBefore(boundary, appletItem);
+                } else {
+                    fastLayoutManager.insertAfter(boundary, appletItem);
+                }
+
+                insertedAtBoundary = true;
+            } else {
+                var sideLayout = sideLayoutForSortDrop(rootX, rootY);
+
+                if (!sideLayout) {
+                    return;
+                }
+
+                if (shouldDelaySortCommit(sideLayout, sideLayout === layoutsContainer.startLayout)) {
+                    return;
+                }
+
+                if (!insertAtSideLayoutEdge(sideLayout)) {
+                    return;
+                }
+
+                insertedAtSideEdge = true;
+            }
+        }
+
+        if (appletItem.parent !== originalParent || target || insertedAtBoundary || insertedAtSideEdge) {
+            sortDragMoved = true;
+            root.updateIndexes();
+        }
+    }
+
+    function finishSortDrag() {
+        if (!sortDragMoved || !fastLayoutManager) {
+            sortDragMoved = false;
+            return;
+        }
+
+        if (root.myView.alignment === LatteCore.types.Justify) {
+            fastLayoutManager.moveAppletsBasedOnJustifyAlignment();
+        }
+
+        fastLayoutManager.save();
+        root.updateIndexes();
+
+        if (layouter) {
+            layouter.updateSizeForAppletsInFill();
+        }
+
+        sortDragMoved = false;
+    }
+
     function activateAppletForNeutralAreas(mouse){
         //if the event is at the active indicator or spacers area then try to expand the applet,
         //unfortunately for other applets there is no other way to activate them yet
@@ -577,8 +1177,13 @@ Item {
     onAppletChanged: {
         if (!applet) {
             destroy();
+            return;
         }
+
+        refreshTrackedWindowAppIds();
     }
+
+    onPluginNameChanged: refreshTrackedWindowAppIds()
 
     onIndexChanged: {
         if (index>-1) {
@@ -591,10 +1196,12 @@ Item {
     }
 
     onIsAutoFillAppletChanged: updateParabolicEffectIsSupported();
+    onTrackedWindowAppIdsChanged: scheduleTrackedWindowsStateRefresh()
     onParentChanged: checkIndex()
 
     Component.onCompleted: {
         checkIndex();
+        refreshTrackedWindowAppIds();
         root.updateIndexes.connect(checkIndex);
         root.destroyInternalViewSplitters.connect(slotDestroyInternalViewSplitters);
 
@@ -603,6 +1210,7 @@ Item {
 
     Component.onDestruction: {
         appletItem.animations.needBothAxis.removeEvent(appletItem);
+        trackedWindowsStateDebouncer.stop();
 
         root.updateIndexes.disconnect(checkIndex);
         root.destroyInternalViewSplitters.disconnect(slotDestroyInternalViewSplitters);
@@ -712,6 +1320,111 @@ Item {
 
     ///END connections
 
+    DragHandler {
+        id: appletSortDragHandler
+        target: null
+        acceptedButtons: Qt.LeftButton
+        enabled: appletItem.externalAppletDrawsAboveTasks
+                 && !root.inConfigureAppletsMode
+                 && root.myView.isShownFully
+                 && !plasmoid.immutable
+
+        onActiveChanged: {
+            if (active) {
+                appletItem.sortDragMoved = false;
+                appletItem.resetSortDragHistory();
+                appletItem.thinTooltip.hide(appletItem.tooltipVisualParent);
+                appletSortDragPoller.restart();
+            } else {
+                appletSortDragPoller.stop();
+                appletItem.finishSortDrag();
+                appletItem.resetSortDragHistory();
+            }
+        }
+    }
+
+    Timer {
+        id: appletSortDragPoller
+        interval: 16
+        repeat: true
+
+        onTriggered: {
+            if (!appletSortDragHandler.active) {
+                stop();
+                return;
+            }
+
+            var rootPos = appletItem.mapToItem(root,
+                                               appletSortDragHandler.centroid.position.x,
+                                               appletSortDragHandler.centroid.position.y);
+            appletItem.updateSortDrag(rootPos.x, rootPos.y);
+        }
+    }
+
+    Timer {
+        id: trackedWindowsStateDebouncer
+        interval: 80
+        repeat: false
+        onTriggered: appletItem.recomputeTrackedWindowsState()
+    }
+
+    Loader {
+        id: trackedWindowsModelLoader
+        active: !appletItem.indexerIsSupported
+                && appletItem.trackedWindowAppIds.length > 0
+                && !!latteView
+        sourceComponent: Item {
+            readonly property alias trackedTasksModel: appletWindowTasksModel
+            readonly property var taskRoles: TaskManager.AbstractTasksModel
+
+            TaskManager.TasksModel {
+                id: appletWindowTasksModel
+                virtualDesktop: virtualDesktopInfo.currentDesktop
+                screenGeometry: latteView ? latteView.screenGeometry : Qt.rect(-1, -1, 0, 0)
+                activity: activityInfo.currentActivity
+
+                filterByVirtualDesktop: true
+                filterByScreen: latteView ? true : false
+                filterByActivity: true
+
+                launchInPlace: true
+                separateLaunchers: false
+                groupInline: false
+                groupMode: TaskManager.TasksModel.GroupDisabled
+                sortMode: TaskManager.TasksModel.SortManual
+            }
+
+            TaskManager.VirtualDesktopInfo {
+                id: virtualDesktopInfo
+            }
+
+            TaskManager.ActivityInfo {
+                id: activityInfo
+            }
+
+            Connections {
+                target: appletWindowTasksModel
+                function onDataChanged() {
+                    appletItem.scheduleTrackedWindowsStateRefresh();
+                }
+
+                function onRowsInserted() {
+                    appletItem.scheduleTrackedWindowsStateRefresh();
+                }
+
+                function onRowsRemoved() {
+                    appletItem.scheduleTrackedWindowsStateRefresh();
+                }
+
+                function onModelReset() {
+                    appletItem.scheduleTrackedWindowsStateRefresh();
+                }
+            }
+
+            Component.onCompleted: appletItem.scheduleTrackedWindowsStateRefresh()
+        }
+    }
+
     //! It is used for any communication needed with the underlying applet
     Communicator.Engine{
         id: _communicator
@@ -746,13 +1459,18 @@ Item {
                 host: appletItem.indicators
 
                 isApplet: true
+                isWindow: appletItem.trackedWindowsCount > 0
 
                 isActive: appletItem.isActive
                 isHovered: appletItem.containsMouse
                 isPressed: appletItem.isPressed
                 isSquare: appletItem.isSquare
 
-                hasActive: appletItem.isActive
+                hasActive: appletItem.hasActiveIndicator
+                hasShown: appletItem.hasShownIndicator
+                hasMinimized: appletItem.hasTrackedMinimizedWindow
+                windowsCount: appletItem.trackedWindowsCount
+                windowsMinimizedCount: Math.max(0, appletItem.trackedWindowsCount - appletItem.trackedShownWindowsCount)
 
                 scaleFactor: appletItem.wrapper.zoomScale
                 panelOpacity: root.background.currentOpacity
@@ -917,7 +1635,7 @@ Item {
         //! in hidden state applets must pass on parabolic messages to neighbours
         readonly property bool isParabolicEnabled: appletItem.parabolic.isEnabled && !lockZoom
         readonly property bool isThinTooltipEnabled: appletItem.thinTooltip.isEnabled && !isHidden
-        readonly property bool hasParabolicMessagesEnabled: appletItem.parabolic.isEnabled && (!lockZoom || isSeparator || isMarginsAreaSeparator || isHidden)
+        readonly property bool hasParabolicMessagesEnabled: appletItem.parabolic.isEnabled && (!lockZoom || isSeparator || isMarginsAreaSeparator || isHidden || externalAppletUsesFixedSlotSizing)
 
         sourceComponent: ParabolicArea{}
 
