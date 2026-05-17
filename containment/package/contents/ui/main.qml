@@ -11,6 +11,7 @@ import org.kde.plasma.core 2.0 as PlasmaCore
 import org.kde.plasma.components 3.0 as PlasmaComponents
 import org.kde.kquickcontrolsaddons 2.0
 import org.kde.plasma.plasmoid 2.0
+import org.kde.kirigami 2.20 as Kirigami
 
 import org.kde.latte.abilities.host 0.1 as AbilityHost
 
@@ -172,7 +173,7 @@ ContainmentItem {
     readonly property bool hasUserSpecifiedBackground: (latteView && latteView.layout && latteView.layout.background.startsWith("/")) ?
                                                            true : false
 
-    readonly property bool inConfigureAppletsMode: root.editMode && universalSettings && universalSettings.inConfigureAppletsMode
+    readonly property bool inConfigureAppletsMode: universalSettings && universalSettings.inConfigureAppletsMode
 
     property bool closeActiveWindowEnabled: plasmoid.configuration.closeActiveWindowEnabled
     property bool dragActiveWindowEnabled: plasmoid.configuration.dragActiveWindowEnabled
@@ -678,10 +679,130 @@ ContainmentItem {
         root.enforceModernAlignmentCompatibility();
 
         fastLayoutManager.restore();
+
+        universalSettings.inConfigureAppletsMode = false;
+
+        initTimer.start();
+
         var action = configureAction();
         if (action) {
             action.visible = !plasmoid.immutable;
             action.enabled = !plasmoid.immutable;
+        }
+    }
+
+    Rectangle {
+        id: editModeBtn
+        z: 999
+        visible: !root.immutable && !root.inConfigureAppletsMode && !root.editMode
+        width: 24
+        height: 24
+        radius: 12
+        color: Qt.rgba(0,0,0,0.3)
+        border.color: Qt.rgba(1,1,1,0.4)
+        border.width: 1
+        opacity: editModeBtnMouse.containsMouse ? 0.9 : 0.35
+
+        Behavior on opacity { NumberAnimation { duration: 200 } }
+
+        state: {
+            if (plasmoid.location === PlasmaCore.Types.BottomEdge) return "bottom"
+            if (plasmoid.location === PlasmaCore.Types.TopEdge) return "top"
+            if (plasmoid.location === PlasmaCore.Types.LeftEdge) return "left"
+            return "right"
+        }
+
+        states: [
+            State {
+                name: "bottom"
+                AnchorChanges { target: editModeBtn; anchors { top: undefined; bottom: parent.bottom; left: undefined; right: parent.right; horizontalCenter: undefined; verticalCenter: undefined } }
+                PropertyChanges { target: editModeBtn; anchors { rightMargin: 4; bottomMargin: 4 } }
+            },
+            State {
+                name: "top"
+                AnchorChanges { target: editModeBtn; anchors { top: parent.top; bottom: undefined; left: undefined; right: parent.right; horizontalCenter: undefined; verticalCenter: undefined } }
+                PropertyChanges { target: editModeBtn; anchors { rightMargin: 4; topMargin: 4 } }
+            },
+            State {
+                name: "left"
+                AnchorChanges { target: editModeBtn; anchors { top: undefined; bottom: parent.bottom; left: parent.left; right: undefined; horizontalCenter: undefined; verticalCenter: undefined } }
+                PropertyChanges { target: editModeBtn; anchors { leftMargin: 4; bottomMargin: 4 } }
+            },
+            State {
+                name: "right"
+                AnchorChanges { target: editModeBtn; anchors { top: undefined; bottom: parent.bottom; left: undefined; right: parent.right; horizontalCenter: undefined; verticalCenter: undefined } }
+                PropertyChanges { target: editModeBtn; anchors { rightMargin: 4; bottomMargin: 4 } }
+            }
+        ]
+
+        Kirigami.Icon {
+            anchors.centerIn: parent
+            width: 14; height: 14
+            source: "document-edit"
+        }
+
+        MouseArea {
+            id: editModeBtnMouse
+            anchors.fill: parent
+            hoverEnabled: true
+            onClicked: {
+                universalSettings.inConfigureAppletsMode = true;
+            }
+        }
+    }
+
+    Rectangle {
+        id: editModeExitBtn
+        z: 999
+        visible: root.inConfigureAppletsMode
+        width: 24
+        height: 24
+        radius: 12
+        color: Qt.rgba(0.6,0,0,0.3)
+        border.color: Qt.rgba(1,1,1,0.5)
+        border.width: 1
+        opacity: editModeExitBtnMouse.containsMouse ? 0.9 : 0.5
+
+        Behavior on opacity { NumberAnimation { duration: 200 } }
+
+        state: editModeBtn.state
+
+        states: [
+            State {
+                name: "bottom"
+                AnchorChanges { target: editModeExitBtn; anchors { top: undefined; bottom: parent.bottom; left: undefined; right: parent.right; horizontalCenter: undefined; verticalCenter: undefined } }
+                PropertyChanges { target: editModeExitBtn; anchors { rightMargin: 4; bottomMargin: 4 } }
+            },
+            State {
+                name: "top"
+                AnchorChanges { target: editModeExitBtn; anchors { top: parent.top; bottom: undefined; left: undefined; right: parent.right; horizontalCenter: undefined; verticalCenter: undefined } }
+                PropertyChanges { target: editModeExitBtn; anchors { rightMargin: 4; topMargin: 4 } }
+            },
+            State {
+                name: "left"
+                AnchorChanges { target: editModeExitBtn; anchors { top: undefined; bottom: parent.bottom; left: parent.left; right: undefined; horizontalCenter: undefined; verticalCenter: undefined } }
+                PropertyChanges { target: editModeExitBtn; anchors { leftMargin: 4; bottomMargin: 4 } }
+            },
+            State {
+                name: "right"
+                AnchorChanges { target: editModeExitBtn; anchors { top: undefined; bottom: parent.bottom; left: undefined; right: parent.right; horizontalCenter: undefined; verticalCenter: undefined } }
+                PropertyChanges { target: editModeExitBtn; anchors { rightMargin: 4; bottomMargin: 4 } }
+            }
+        ]
+
+        Kirigami.Icon {
+            anchors.centerIn: parent
+            width: 14; height: 14
+            source: "dialog-close"
+        }
+
+        MouseArea {
+            id: editModeExitBtnMouse
+            anchors.fill: parent
+            hoverEnabled: true
+            onClicked: {
+                universalSettings.inConfigureAppletsMode = false;
+            }
         }
     }
 
@@ -715,14 +836,6 @@ ContainmentItem {
     }
 
     Containment.onAppletRemoved: function(applet) { fastLayoutManager.removeAppletItem(applet); }
-
-    Plasmoid.onUserConfiguringChanged: {
-        if (plasmoid.userConfiguring) {
-            for (var i = 0; i < plasmoid.applets.length; ++i) {
-                plasmoid.applets[i].expanded = false;
-            }
-        }
-    }
 
     Plasmoid.onImmutableChanged: {
         var action = configureAction();
@@ -1544,5 +1657,11 @@ ContainmentItem {
 
             opacity: 0.20
         }
+    }
+
+    Timer {
+        id: initTimer
+        interval: 500
+        onTriggered: universalSettings.inConfigureAppletsMode = false
     }
 }

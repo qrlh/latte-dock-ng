@@ -18,8 +18,8 @@ Item {
     width: plasmoid.formFactor === PlasmaCore.Types.Horizontal ? parent.width : parent.height
     height: thickness
 
-    readonly property bool containsMouse: rearrangeBtn.containsMouse || stickOnBottomBtn.containsMouse || stickOnTopBtn.containsMouse
-    readonly property int thickness: rearrangeBtn.implicitHeight
+    readonly property bool containsMouse: stickOnBottomBtn.containsMouse || stickOnTopBtn.containsMouse
+    readonly property int thickness: stickOnTopBtn.implicitHeight
 
     readonly property int headMargin: spacing * 2
 
@@ -55,7 +55,7 @@ Item {
         if (plasmoid.location === PlasmaCore.Types.BottomEdge) {
             return headMargin;
         } else if (plasmoid.location === PlasmaCore.Types.TopEdge) {
-            return parent.height - rearrangeBtn.height - headMargin;
+            return parent.height - stickOnTopBtn.height - headMargin;
         }
     }
 
@@ -98,25 +98,6 @@ Item {
         ]
     }
 
-
-    SettingsControls.Button{
-        id: rearrangeBtn
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: parent.top
-
-        text: i18n("Rearrange and configure your widgets")
-        tooltip: i18n("Feel free to move around your widgets and configure them from their tooltips")
-        checked: universalSettings.inConfigureAppletsMode
-        iconPositionReversed: plasmoid.location === PlasmaCore.Types.RightEdge
-
-        icon: SettingsControls.RearrangeIcon{}
-
-        onPressedChanged: {
-            if (pressed) {
-                universalSettings.inConfigureAppletsMode = !universalSettings.inConfigureAppletsMode;
-            }
-        }
-    }
 
     SettingsControls.Button{
         id: stickOnBottomBtn
