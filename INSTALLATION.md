@@ -27,10 +27,9 @@ sudo pacman -Syu
 sudo pacman -S \
   cmake extra-cmake-modules \
   qt6-base qt6-declarative qt6-wayland \
-  kf6-plasma kf6-kactivities kf6-kcoreaddons kf6-kguiaddons \
-  kf6-kdbusaddons kf6-kdeclarative kf6-kxmlgui kf6-kiconthemes \
-  kf6-kio kf6-ki18n kf6-knotifications kf6-knewstuff kf6-karchive \
-  kf6-kglobalaccel kf6-kcrash kf6-kwindowsystem \
+  plasma kactivities kcoreaddons kguiaddons kdbusaddons \
+  kdeclarative kxmlgui kiconthemes kio ki18n knotifications \
+  knewstuff karchive kglobalaccel kcrash kwindowsystem \
   plasma-wayland-protocols wayland
 ```
 
