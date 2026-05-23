@@ -96,8 +96,6 @@ Loader {
                 else if (angle < -10) newVal = Math.max(0, current - opacityStep)
                 if (newVal >= 0) {
                     plasmoid.configuration.panelTransparency = newVal
-                    if (latteView && latteView.rootObject)
-                        latteView.rootObject.backgroundOpacity = newVal / 100
                 }
             }
 

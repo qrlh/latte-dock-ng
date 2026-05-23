@@ -32,6 +32,22 @@ ContainmentItem {
     id: root
     objectName: "containmentViewLayout"
 
+    property real panelBgOpacity: 1.0
+    property bool panelCustomTransparency: false
+
+    Timer {
+        id: panelCfgSync
+        interval: 300
+        repeat: true
+        running: true
+        onTriggered: {
+            var pt = plasmoid.configuration.panelTransparency
+            var isDefault = (pt === -1 || pt === "-1" || pt === undefined || pt === null || pt === "" || Number(pt) >= 100)
+            root.panelBgOpacity = isDefault ? 1.0 : Number(pt) / 100.0
+            root.panelCustomTransparency = !isDefault
+        }
+    }
+
     LayoutMirroring.enabled: Qt.application.layoutDirection === Qt.RightToLeft && !root.isVertical
     LayoutMirroring.childrenInherit: true
 
@@ -91,13 +107,7 @@ ContainmentItem {
         return changed;
     }
 
-    property real backgroundOpacity: {
-        var pt = plasmoid.configuration.panelTransparency
-        return (pt === -1 || pt === "-1") ? 1.0 : Number(pt) / 100.0
-    }
-
-    readonly property bool hasCustomTransparency: plasmoid.configuration.panelTransparency !== -1 && plasmoid.configuration.panelTransparency !== "-1"
-    property bool blurEnabled: plasmoid.configuration.blurEnabled && !hasCustomTransparency && (!forceTransparentPanel || forcePanelForBusyBackground)
+    property bool blurEnabled: !panelCustomTransparency && plasmoid.configuration.blurEnabled && (!forceTransparentPanel || forcePanelForBusyBackground)
 
     readonly property bool inDraggingOverAppletOrOutOfContainment: latteView && latteView.containsDrag && !backDropArea.containsDrag
 

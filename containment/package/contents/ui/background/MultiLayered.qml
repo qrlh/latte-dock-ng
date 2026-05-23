@@ -554,9 +554,7 @@ BackgroundProperties{
                 return root.myView.backgroundStoredOpacity;
             }
 
-            if (modernDockStyle) {
-                return root.backgroundOpacity;
-            } else if (coloredView || customShadowedRectangleIsEnabled) {
+            if (modernDockStyle || coloredView || customShadowedRectangleIsEnabled) {
                 return midOpacity;
             }
 
@@ -585,7 +583,8 @@ BackgroundProperties{
             } else if (!root.userShowPanelBackground || root.forcePanelForBusyBackground || root.forceTransparentPanel) {
                 return 0;
             } else if (modernDockStyle) {
-                return root.backgroundOpacity;
+                var storedOpacity = barLine.isDefaultOpacityEnabled ? 0.62 : root.myView.backgroundStoredOpacity;
+                return Math.max(0.50, storedOpacity);
             } else {
                 return root.myView.backgroundStoredOpacity;
             }
