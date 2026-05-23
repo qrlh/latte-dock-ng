@@ -159,7 +159,8 @@ if [[ "$install_mode" == "user" ]]; then
     fi
     # Extract the lib* component (e.g. "lib64" from "/usr/lib64/qt6/qml")
     if [[ -n "$sys_qml_dir" ]]; then
-        qml_lib_name="$(echo "$sys_qml_dir" | grep -oP 'lib\d*(?=/qt6)' || echo "lib")"
+        qml_lib_name="$(echo "$sys_qml_dir" | sed -n 's|.*/\(lib[0-9]*\)/qt6/.*|\1|p')"
+        [[ -z "$qml_lib_name" ]] && qml_lib_name="lib"
     else
         qml_lib_name="lib"
         # Fall back: check which lib64 or lib exists on the system
@@ -327,13 +328,18 @@ fi
 if [[ "$install_mode" == "user" ]]; then
     qt_qml_dir="$kde_install_qmldir"
 else
-    qt_qml_dir="/usr/lib64/qt6/qml"
+    qt_qml_dir=""
     if command -v qtpaths6 >/dev/null 2>&1; then
         qt_qml_dir="$(qtpaths6 --query QT_INSTALL_QML 2>/dev/null || true)"
     elif command -v qtpaths >/dev/null 2>&1; then
         qt_qml_dir="$(qtpaths --query QT_INSTALL_QML 2>/dev/null || true)"
     fi
-    [[ -z "$qt_qml_dir" ]] && qt_qml_dir="/usr/lib64/qt6/qml"
+    if [[ -z "$qt_qml_dir" ]]; then
+        for _probe in /usr/lib64/qt6/qml /usr/lib/qt6/qml /usr/lib/x86_64-linux-gnu/qt6/qml; do
+            [[ -d "$_probe" ]] && qt_qml_dir="$_probe" && break
+        done
+        [[ -z "$qt_qml_dir" ]] && qt_qml_dir="/usr/lib64/qt6/qml"
+    fi
 fi
 
 fallback_taskmanager_dir="${qt_qml_dir}/org/kde/plasma/private/taskmanager"
