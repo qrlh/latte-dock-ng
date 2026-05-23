@@ -30,7 +30,7 @@ Loader {
 
         readonly property real appliedOpacity: imageTiler.opacity
         readonly property real maxOpacity: universalSettings.inConfigureAppletsMode || !LatteCore.WindowSystem.compositingActive ?
-                                        1 : plasmoid.configuration.editBackgroundOpacity
+                                        plasmoid.configuration.editBackgroundOpacity : 0
 
         property real offset: {
             if (root.isHorizontal) {
