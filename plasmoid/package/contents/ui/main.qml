@@ -747,7 +747,6 @@ PlasmoidItem {
         metrics.local.padding.length: 0.04 * metrics.iconSize
 
         myView.local.isHidingBlocked: root.contextMenu || root.windowPreviewIsShown
-        myView.local.itemShadow.isEnabled: plasmoid.configuration.showShadows
         myView.local.itemShadow.size: Math.ceil(0.12*appletAbilities.metrics.iconSize)
 
         // Avoid self-referential bindings between parabolic.isEnabled and
