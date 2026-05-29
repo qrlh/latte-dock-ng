@@ -45,3 +45,8 @@ CMakeLists.txt.user*
 /compile_commands.json
 
 .claude/worktrees/
+
+# IDE and tooling
+.cache/
+.idea/
+.claude/
