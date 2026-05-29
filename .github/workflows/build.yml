@@ -30,8 +30,8 @@ jobs:
             libkf6globalaccel-dev libkf6guiaddons-dev libkf6i18n-dev \
             libkf6iconthemes-dev libkf6kio-dev libkf6itemmodels-dev \
             libkf6newstuff-dev libkf6notifications-dev libkf6package-dev \
-            libkf6svg-dev libkf6windowsystem-dev libkf6xmlgui-dev \
-            libplasma-dev libkpipewire-dev libkwayland-dev \
+            libkf6windowsystem-dev libkf6xmlgui-dev \
+            libplasma-dev libkpipewire-dev libkf6wayland-dev \
             plasma-activities-dev plasma-activities-stats-dev \
             plasma-workspace-dev plasma-wayland-protocols \
             libwayland-dev
