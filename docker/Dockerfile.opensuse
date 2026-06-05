@@ -19,5 +19,6 @@ RUN zypper --non-interactive --gpg-auto-import-keys refresh && \
       kf6-knewstuff-devel kf6-karchive-devel kf6-kglobalaccel-devel \
       kf6-kcrash-devel kf6-kwindowsystem-devel kf6-kpackage-devel kf6-ksvg-devel \
       plasma-wayland-protocols wayland-devel \
+      layer-shell-qt6-devel \
       gcc-c++ make gettext git pkgconf rpm-build && \
     zypper clean --all

@@ -15,5 +15,6 @@ RUN pacman -Syu --noconfirm && \
       kdeclarative kitemmodels kxmlgui kiconthemes kio ki18n knotifications \
       knewstuff karchive kpackage kglobalaccel kcrash kwindowsystem ksvg \
       plasma-wayland-protocols wayland \
+      layer-shell-qt \
       gcc make gettext git pkgconf && \
     pacman -Scc --noconfirm
