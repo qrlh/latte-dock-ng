@@ -1068,7 +1068,7 @@ PlasmaComponents.Page {
                     LatteComponents.Slider {
                         id: radiusSlider
                         Layout.fillWidth: true
-                        enabled: showBackground.checked
+                        enabled: showBackground.checked && allCorners.checked
 
                         value: plasmoid.configuration.backgroundRadius
                         from: -1
