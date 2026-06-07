@@ -290,6 +290,7 @@ Item{
     AppletsContainer {
         id: _mainLayout
         z:10 //be on top of start and end layouts
+        clip: true //prevent zoomed items from overlapping adjacent layouts
         beginIndex: 100
         offset: {
             if (!centered) {
