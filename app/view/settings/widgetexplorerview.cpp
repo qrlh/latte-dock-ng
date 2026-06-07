@@ -144,12 +144,20 @@ void WidgetExplorerView::syncGeometry()
 
 void WidgetExplorerView::showEvent(QShowEvent *ev)
 {
+    SubConfigView::showEvent(ev);
+
     if (m_shellSurface) {
         //! under wayland it needs to be set again after its hiding
         m_shellSurface->setPosition(m_geometryWhenVisible.topLeft());
-    }
 
-    SubConfigView::showEvent(ev);
+        // Use AppletPopup role so the compositor applies the panel/Plasma
+        // color scheme instead of the application color scheme. This way
+        // the dialog matches the panel appearance even when the app color
+        // scheme differs (e.g. dark panel + light applications).
+        if (m_shellSurface->role() != KWayland::Client::PlasmaShellSurface::Role::AppletPopup) {
+            m_shellSurface->setRole(KWayland::Client::PlasmaShellSurface::Role::AppletPopup);
+        }
+    }
 
     if (!m_latteView) {
         return;

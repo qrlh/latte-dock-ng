@@ -121,7 +121,9 @@ Item {
                 // Top-right (when uninstall present): remove all running instances
                 PlasmaComponents.ToolButton {
                     id: removeInstancesButton
-                    Kirigami.Theme.colorSet: Kirigami.Theme.Complementary
+                    Kirigami.Theme.colorSet: (typeof themeExtended !== "undefined" && themeExtended && themeExtended.isDarkTheme)
+                        ? Kirigami.Theme.Complementary
+                        : Kirigami.Theme.Button
                     Kirigami.Theme.inherit: false
                     anchors {
                         top: parent.top
@@ -154,7 +156,9 @@ Item {
                 // Top-right: uninstall (only for user-installed widgets)
                 PlasmaComponents.ToolButton {
                     id: uninstallButton
-                    Kirigami.Theme.colorSet: Kirigami.Theme.Complementary
+                    Kirigami.Theme.colorSet: (typeof themeExtended !== "undefined" && themeExtended && themeExtended.isDarkTheme)
+                        ? Kirigami.Theme.Complementary
+                        : Kirigami.Theme.Button
                     Kirigami.Theme.inherit: false
                     anchors {
                         top: parent.top

@@ -23,11 +23,12 @@ import org.kde.plasma.private.shell 2.0 as PlasmaShell
 
 PC3.Page {
     id: main
-    // The FrameSvg "dialogs/background" follows the Plasma panel theme and is
-    // always dark. Complementary gives panel-appropriate colors (light text) so
-    // the dialog is readable when the application color scheme is light
-    // (e.g. dark panel + light applications).
-    Kirigami.Theme.colorSet: Kirigami.Theme.Complementary
+    // FrameSvg "dialogs/background" follows the Plasma theme. If the plasma
+    // theme is dark, use Complementary for light text on dark background.
+    // If light, use the default (Window) for dark text on light background.
+    Kirigami.Theme.colorSet: (themeExtended && themeExtended.isDarkTheme)
+        ? Kirigami.Theme.Complementary
+        : Kirigami.Theme.Window
     Kirigami.Theme.inherit: false
 
     // Timer constants
@@ -344,7 +345,9 @@ PC3.Page {
             RowLayout {
                 PC3.TextField {
                     id: searchInput
-                    Kirigami.Theme.colorSet: Kirigami.Theme.Complementary
+                    Kirigami.Theme.colorSet: (themeExtended && themeExtended.isDarkTheme)
+                        ? Kirigami.Theme.Complementary
+                        : Kirigami.Theme.View
                     Kirigami.Theme.inherit: false
                     Layout.fillWidth: true
                     clearButtonShown: true
@@ -368,7 +371,9 @@ PC3.Page {
                 }
                 PC3.ToolButton {
                     id: categoryButton
-                    Kirigami.Theme.colorSet: Kirigami.Theme.Complementary
+                    Kirigami.Theme.colorSet: (themeExtended && themeExtended.isDarkTheme)
+                        ? Kirigami.Theme.Complementary
+                        : Kirigami.Theme.Button
                     Kirigami.Theme.inherit: false
                     text: i18nd("plasma_shell_org.kde.plasma.desktop", "All Widgets")
                     icon.name: "view-filter"
