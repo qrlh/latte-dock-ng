@@ -266,7 +266,6 @@ PC3.Page {
     PlasmaExtras.ModelContextMenu {
         id: getWidgetsDialog
         visualParent: getWidgetsButton
-        placement: PlasmaExtras.Menu.TopPosedLeftAlignedPopup
         // model set on first invocation
         onClicked: model.trigger()
     }
@@ -338,10 +337,9 @@ PC3.Page {
                     Kirigami.Theme.inherit: false
                     text: i18nd("plasma_shell_org.kde.plasma.desktop", "Get New Widgets…")
                     onClicked: {
-                        if (widgetExplorer && widgetExplorer.widgetsMenuActions) {
-                            getWidgetsDialog.model = widgetExplorer.widgetsMenuActions
-                            getWidgetsDialog.openRelative()
-                        }
+                        if (!widgetExplorer) return
+                        getWidgetsDialog.model = widgetExplorer.widgetsMenuActions
+                        getWidgetsDialog.open(0, getWidgetsButton.height)
                     }
                 }
                 PC3.ToolButton {
