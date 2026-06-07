@@ -266,6 +266,7 @@ PC3.Page {
     PlasmaExtras.ModelContextMenu {
         id: getWidgetsDialog
         visualParent: getWidgetsButton
+        placement: PlasmaExtras.Menu.TopPosedLeftAlignedPopup
         // model set on first invocation
         onClicked: model.trigger()
     }
@@ -321,12 +322,20 @@ PC3.Page {
                     level: 1
                     text: i18nd("plasma_shell_org.kde.plasma.desktop", "Widgets")
                     elide: Text.ElideRight
+                    Kirigami.Theme.colorSet: (themeExtended && themeExtended.isDarkTheme)
+                        ? Kirigami.Theme.Complementary
+                        : Kirigami.Theme.View
+                    Kirigami.Theme.inherit: false
 
                     Layout.fillWidth: true
                 }
                 PC3.ToolButton {
                     id: getWidgetsButton
                     icon.name: "get-hot-new-stuff"
+                    Kirigami.Theme.colorSet: (themeExtended && themeExtended.isDarkTheme)
+                        ? Kirigami.Theme.Complementary
+                        : Kirigami.Theme.Button
+                    Kirigami.Theme.inherit: false
                     text: i18nd("plasma_shell_org.kde.plasma.desktop", "Get New Widgets…")
                     onClicked: {
                         if (widgetExplorer && widgetExplorer.widgetsMenuActions) {
@@ -338,6 +347,10 @@ PC3.Page {
                 PC3.ToolButton {
                     id: closeButton
                     icon.name: "window-close"
+                    Kirigami.Theme.colorSet: (themeExtended && themeExtended.isDarkTheme)
+                        ? Kirigami.Theme.Complementary
+                        : Kirigami.Theme.Button
+                    Kirigami.Theme.inherit: false
                     onClicked: main.closed()
                 }
             }
