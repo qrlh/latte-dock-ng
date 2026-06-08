@@ -13,7 +13,7 @@
 #include <QStandardPaths>
 #include <QTextStream>
 
-static constexpr int kCompatVersion = 6;
+static constexpr int kCompatVersion = 7;
 
 //! Patched DrawerHandle.qml — Qt 6.10 removed DragHandler.xAxis.onActiveValueChanged.
 //! Use DragHandler.onActiveTranslationChanged instead.
@@ -37,6 +37,8 @@ Item {
 
     readonly property T.Overlay overlay: drawer.T.Overlay.overlay
 
+    readonly property bool drawerReady: drawer && drawer.background
+
     parent: overlay?.parent ?? null
     z: overlay ? overlay.z  + (drawer?.modal && (drawer as KT.OverlayDrawer)?.drawerOpen ? 1 : - 1) : 0
 
@@ -45,10 +47,12 @@ Item {
         anchors.centerIn: parent
         flat: false
 
-        icon.name: root.drawer.position > 0 ? root.drawer.handleOpenIcon.name : root.drawer.handleClosedIcon.name
-        icon.source: root.drawer.position > 0 ? root.drawer.handleOpenIcon.source ?? "" : root.drawer.handleClosedIcon.source ?? ""
-        icon.width: root.drawer.handleOpenIcon.width
-        icon.height: root.drawer.handleOpenIcon.height
+        icon.name: root.drawer?.position > 0 ? root.drawer?.handleOpenIcon.name ?? root.drawer?.handleClosedIcon.name ?? ""
+                                    : root.drawer?.handleClosedIcon.name ?? root.drawer?.handleOpenIcon.name ?? ""
+        icon.source: root.drawer?.position > 0 ? root.drawer?.handleOpenIcon.source ?? root.drawer?.handleClosedIcon.source ?? ""
+                                    : root.drawer?.handleClosedIcon.source ?? root.drawer?.handleOpenIcon.source ?? ""
+        icon.width: root.drawer?.handleOpenIcon.width ?? Kirigami.Units.iconSizes.smallMedium
+        icon.height: root.drawer?.handleOpenIcon.height ?? Kirigami.Units.iconSizes.smallMedium
         Accessible.name: QQC2.ToolTip.text
 
         onClicked: {
@@ -59,7 +63,7 @@ Item {
             })
         }
         Keys.onEscapePressed: {
-            if (root.drawer.closePolicy & T.Popup.CloseOnEscape) {
+            if (root.drawer?.closePolicy & T.Popup.CloseOnEscape) {
                 root.drawer.drawerOpen = false;
             }
         }
@@ -67,7 +71,7 @@ Item {
         QQC2.ToolTip.visible: root.displayToolTip && hovered
         QQC2.ToolTip.text: {
             const oDrawer = root.drawer as KT.OverlayDrawer
-            return oDrawer.drawerOpen ? oDrawer.handleOpenToolTip : oDrawer.handleClosedToolTip
+            return oDrawer?.drawerOpen ? oDrawer?.handleOpenToolTip ?? "" : oDrawer?.handleClosedToolTip ?? ""
         }
         QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
 
@@ -77,10 +81,10 @@ Item {
             acceptedDevices: PointerDevice.TouchScreen | PointerDevice.Stylus
             property real prevTranslationX: 0
             onActiveTranslationChanged: {
-                if (!root.drawer.contentItem) return;
+                if (!root.drawer?.contentItem) return;
                 let delta = dragHandler.activeTranslation.x - dragHandler.prevTranslationX;
                 dragHandler.prevTranslationX = dragHandler.activeTranslation.x;
-                let cw = root.drawer.contentItem.width;
+                let cw = root.drawer?.contentItem?.width ?? 0;
                 if (cw <= 0) return;
                 let positionDelta = delta / cw;
                 if (root.drawer.edge === Qt.RightEdge) {
@@ -116,13 +120,13 @@ Item {
             ? globalToolBar.leftHandleAnchor : globalToolBar.rightHandleAnchor;
     }
 
-    enabled: (drawer as KT.OverlayDrawer).handleVisible
+    enabled: (drawer as KT.OverlayDrawer)?.handleVisible ?? false
 
     x: {
-        if (!drawer || !drawer.background) return 0;
+        if (!root.drawerReady) return 0;
         switch (drawer.edge) {
-        case Qt.LeftEdge:  return drawer.background.width * drawer.position + Kirigami.Units.smallSpacing;
-        case Qt.RightEdge: return parent.width - (drawer.background.width * drawer.position) - width - Kirigami.Units.smallSpacing;
+        case Qt.LeftEdge:  return (drawer.background?.width ?? 0) * drawer.position + Kirigami.Units.smallSpacing;
+        case Qt.RightEdge: return parent.width - ((drawer.background?.width ?? 0) * drawer.position) - width - Kirigami.Units.smallSpacing;
         default:           return 0;
         }
     }
@@ -263,17 +267,17 @@ Item {
     QQC2.ToolButton {
         anchors.centerIn: parent
         flat: false
-        icon.name: root.drawer.position > 0 ? root.drawer.handleOpenIcon.name : root.drawer.handleClosedIcon.name
-        icon.source: root.drawer.position > 0 ? root.drawer.handleOpenIcon.source ?? "" : root.drawer.handleClosedIcon.source ?? ""
-        icon.width: root.drawer.handleOpenIcon.width
-        icon.height: root.drawer.handleOpenIcon.height
+        icon.name: root.drawer?.position > 0 ? root.drawer?.handleOpenIcon.name ?? "" : root.drawer?.handleClosedIcon.name ?? ""
+        icon.source: root.drawer?.position > 0 ? root.drawer?.handleOpenIcon.source ?? "" : root.drawer?.handleClosedIcon.source ?? ""
+        icon.width: root.drawer?.handleOpenIcon.width ?? Kirigami.Units.iconSizes.smallMedium
+        icon.height: root.drawer?.handleOpenIcon.height ?? Kirigami.Units.iconSizes.smallMedium
 
         onClicked: {
             const oDrawer = root.drawer as KT.OverlayDrawer
             oDrawer.drawerOpen = !oDrawer.drawerOpen;
         }
         Keys.onEscapePressed: {
-            if (root.drawer.closePolicy & T.Popup.CloseOnEscape)
+            if (root.drawer?.closePolicy & T.Popup.CloseOnEscape)
                 root.drawer.drawerOpen = false;
         }
 
@@ -283,10 +287,10 @@ Item {
             acceptedDevices: PointerDevice.TouchScreen
             property real prevTranslationX: 0
             onActiveTranslationChanged: {
-                if (!root.drawer.contentItem) return;
+                if (!root.drawer?.contentItem) return;
                 let delta = dragHandler.activeTranslation.x - dragHandler.prevTranslationX;
                 dragHandler.prevTranslationX = dragHandler.activeTranslation.x;
-                let cw = root.drawer.contentItem.width;
+                let cw = root.drawer?.contentItem?.width ?? 0;
                 if (cw <= 0) return;
                 let positionDelta = delta / cw;
                 if (root.drawer.edge === Qt.RightEdge)
@@ -310,9 +314,10 @@ Item {
     }
 
     x: {
+        if (!drawer) return 0;
         switch (drawer.edge) {
-        case Qt.LeftEdge:  return drawer.background.width * drawer.position + Kirigami.Units.smallSpacing;
-        case Qt.RightEdge: return parent.width - (drawer.background.width * drawer.position) - width - Kirigami.Units.smallSpacing;
+        case Qt.LeftEdge:  return (drawer.background?.width ?? 0) * drawer.position + Kirigami.Units.smallSpacing;
+        case Qt.RightEdge: return parent.width - ((drawer.background?.width ?? 0) * drawer.position) - width - Kirigami.Units.smallSpacing;
         default:           return 0;
         }
     }
