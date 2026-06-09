@@ -51,6 +51,17 @@ void Parabolic::setCurrentParabolicItem(QQuickItem *item)
         return;
     }
 
+    //! Prevent rapid oscillation between items when the cursor is positioned
+    //! exactly between two icons. A minimum lock interval (150ms) is enforced
+    //! when switching from one zoomed item to another — clearing to null on
+    //! exit is always allowed to avoid a stale zoomed state.
+    if (m_currentParabolicItem && item) {
+        if (m_lastSwitchTimer.isValid() && m_lastSwitchTimer.elapsed() < MIN_SWITCH_INTERVAL_MS) {
+            return;
+        }
+        m_lastSwitchTimer.start();
+    }
+
     if (m_currentParabolicItem) {
         QMetaObject::invokeMethod(m_currentParabolicItem, "parabolicExited", Qt::QueuedConnection);
     }

@@ -7,6 +7,7 @@
 #define VIEWPARABOLIC_H
 
 // Qt
+#include <QElapsedTimer>
 #include <QEvent>
 #include <QObject>
 #include <QQuickItem>
@@ -42,12 +43,17 @@ private Q_SLOTS:
     void onEvent(QEvent *e);
 
 private:
+    //! Minimum interval between parabolic item switches to prevent
+    //! rapid oscillation when the cursor is positioned between two icons.
+    static constexpr int MIN_SWITCH_INTERVAL_MS{150};
+
     QPointer<Latte::View> m_view;
     QPointer<QQuickItem> m_currentParabolicItem;
 
     QPointF m_lastOrphanParabolicMove;
 
     QTimer m_parabolicItemNullifier;
+    QElapsedTimer m_lastSwitchTimer;
 };
 
 }
