@@ -128,25 +128,14 @@ Rectangle {
 
         if (item.configUiModule && item.configUiComponent) {
             root.currentSource = item.configUiModule + item.configUiComponent;
-            const config = Plasmoid.configuration;
 
             const props = {
                 "title": item.name,
             };
 
-            config.keys().forEach(key => {
-                props["cfg_" + key] = config[key];
-            });
-
             pushReplace(Qt.createComponent(item.configUiModule, item.configUiComponent), props);
         } else if (item.source) {
-            const config = Plasmoid.configuration;
-
             const props = { "title": item.name };
-
-            config.keys().forEach(key => {
-                props["cfg_" + key] = config[key];
-            });
 
             pushReplace(Qt.resolvedUrl(item.source), props);
         } else {
@@ -178,7 +167,15 @@ Rectangle {
                 const config = Plasmoid.configuration;
 
                 config.keys().forEach(key => {
-                    const changedSignal = pageStack.currentItem["cfg_" + key + "Changed"];
+                    const cfgKey = "cfg_" + key;
+                    // Only set cfg_* properties the page actually declares.
+                    // Without this guard, config keys belonging to other pages
+                    // of the plasmoid trigger "Cannot assign to non-existent
+                    // property" warnings (KDE bug 484541).
+                    if (cfgKey in pageStack.currentItem) {
+                        pageStack.currentItem[cfgKey] = config[key];
+                    }
+                    const changedSignal = pageStack.currentItem[cfgKey + "Changed"];
                     if (changedSignal) {
                         changedSignal.connect(() => root.settingValueChanged());
                     }
