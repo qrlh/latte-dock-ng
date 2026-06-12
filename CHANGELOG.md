@@ -2,6 +2,21 @@
 
 All notable changes to Latte Dock NG are documented in this file.
 
+## [v1.1.19] - 2026-06-13
+
+### Changed
+- Moved taskmanager fallback QML module from `org.kde.plasma.private.taskmanager` to `org.kde.latte.compat.taskmanager`, so latte no longer installs or removes files in Plasma's namespace.
+- Removed dead `TaskManagerApplet` import from `TaskItem.qml`.
+
+### Fixed
+- Wheel events now pass through to all external applets, not just systray.
+- Wayland no longer destroys applet popups on open.
+- Widget explorer now uses single-click to add widgets instead of double-click.
+- External C++ plasmoids that request `fillWidth` now render correctly.
+- Widget explorer places new applets before systray/tasks, not at dock end.
+- Systray drag-and-drop reorder works without breaking layout.
+- Suppressed benign KDE framework property override warnings and KIO teardown errors.
+
 ## [v1.0.14] - 2026-05-15
 
 ### Added
