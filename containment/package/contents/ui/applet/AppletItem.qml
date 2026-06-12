@@ -25,7 +25,7 @@ Item {
     id: appletItem
     width: isInternalViewSplitter ? 0 : computeWidth
     height: isInternalViewSplitter ? 0 : computeHeight
-    z: isSortDragging ? 1600 : (externalAppletDrawsAboveTasks ? 1000 : 0)
+    z: isSortDragging ? 1600 : ((externalAppletDrawsAboveTasks && !isSystray) ? 1000 : 0)
 
     // Prevent external applets from rendering beyond their allocated slot
     // and overlapping neighboring icons (e.g., digital clock text).
@@ -90,7 +90,6 @@ Item {
     readonly property bool externalAppletDrawsAboveTasks: isExternalPlasmaApplet
                                                           && !isSeparator
                                                           && !isSpacer
-                                                          && !isSystray
     readonly property bool keepVisibleOnHiddenStatus: externalAppletDrawsAboveTasks
     readonly property bool externalAppletHasStableNativeSizing: applet
                                                                && applet.Layout
@@ -104,6 +103,7 @@ Item {
     readonly property bool externalAppletUsesFixedSlotSizing: externalAppletDrawsAboveTasks
                                                              && !communicator.appletMainIconIsFound
                                                              && !externalAppletHasStableNativeSizing
+                                                             && !isSystray
     property bool appletBlocksParabolicEffect: communicator.requires.parabolicEffectLocked
     readonly property bool lockZoom: !parabolicEffectIsSupported
                                      || appletBlocksParabolicEffect

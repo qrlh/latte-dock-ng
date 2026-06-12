@@ -662,7 +662,9 @@ inline void filterDebugMessageOutput(QtMsgType type, const QMessageLogContext &c
         || (msg.contains("Member implicitWidth of the object HeaderSwitch_QMLTYPE") && msg.contains("overrides"))
         || (msg.contains("Member implicitHeight of the object HeaderSwitch_QMLTYPE") && msg.contains("overrides"))
         // Plasma digital clock Tooltip — internal TypeError, harmless.
-        || msg.contains("digitalclock/Tooltip.qml:40: TypeError")) {
+        || msg.contains("digitalclock/Tooltip.qml:40: TypeError")
+        // Plasma clipboard applet — QML type mismatch with Plasma 6 framework.
+        || (msg.contains("org.kde.plasma.clipboard") && msg.contains("error when loading"))) {
         //! block warnings from dependencies that still ship legacy QML snippets.
         //! this project requires Qt 6.6+, so warnings related to Qt < 6 fallback code are irrelevant here.
         //! this also filters a known Qt/Plasma startup warning from workspace calendar internals.
