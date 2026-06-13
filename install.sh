@@ -190,7 +190,13 @@ fi
 # ── Pre-install cleanup ───────────────────────────────────────────────────────
 if [[ "$preclean_install" == "true" ]]; then
     uninstall_cmd=(bash "${script_dir}/uninstall.sh" "--${install_mode}")
-    [[ "$purge_user_data" == "true" ]] && uninstall_cmd+=(--purge-user-data)
+    # Never purge user data by default during pre-clean (updating should not
+    # delete user config).  Only purge when the user explicitly requests it.
+    if [[ "$purge_user_data" == "true" ]]; then
+        uninstall_cmd+=(--purge-user-data)
+    else
+        uninstall_cmd+=(--no-purge-user-data)
+    fi
     echo "Info: running pre-install cleanup: ${uninstall_cmd[*]}"
     "${uninstall_cmd[@]}"
 elif [[ "$purge_user_data" == "true" ]]; then
