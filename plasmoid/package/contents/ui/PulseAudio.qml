@@ -273,5 +273,34 @@ QtObject {
 
     Component.onCompleted: {
         console.log("PulseAudio Latte interface was loaded...");
+        paFixTimer.start();
+    }
+
+    // ── plasma-pa PreferredDevice workaround ────────────────────────────
+    // PreferredDevice's constructor only connects to Server.defaultSinkChanged
+    // — it never calls updatePreferredSink() initially.  If the PulseAudio
+    // server is already available when PreferredDevice is first created, the
+    // signal never fires and PreferredDevice.sink stays null forever, causing
+    // the volume applet to show a muted icon.
+    //
+    // We wait a few seconds for the PulseAudio context to be warm, then emit
+    // defaultSinkChanged on the Server singleton to force PreferredDevice
+    // to call updatePreferredSink() and read the initial sink state.
+    property Timer paFixTimer: Timer {
+        interval: 3000
+        repeat: true
+        running: false
+        onTriggered: {
+            try {
+                var ds = Server.defaultSink
+                if (ds && PreferredDevice) {
+                    Server.defaultSinkChanged(ds)
+                    // Keep running — PreferredDevice is lazily created and
+                    // we need to retrigger whenever a new volume applet is added.
+                }
+            } catch (e) {
+                // Server/PreferredDevice not registered in this module version
+            }
+        }
     }
 }
