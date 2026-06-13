@@ -27,8 +27,7 @@ Item{
                                      (root.editMode ? 400 : animations.speedFactor.current * 1.62 * animations.duration.large) : 0
 
     property bool inClientSideScreenEdgeSliding: hideThickScreenGap
-    property bool inNormalState: ((animations.needBothAxis.count === 0) && (animations.needLength.count === 0))
-                                 || (latteView && latteView.visibility.isHidden && !latteView.visibility.containsMouse && animations.needThickness.count === 0)
+    property bool inNormalState: false  // computed imperatively below
     property bool inRelocationAnimation: latteView && latteView.positioner && latteView.positioner.inRelocationAnimation
 
     property bool inSlidingIn: false //necessary because of its init structure
@@ -68,19 +67,28 @@ Item{
         function onHeightChanged() { updateMaskArea(); }
     }
 
+    function recomputeInNormalState() {
+        var wasNormal = inNormalState;
+        inNormalState = ((animations.needBothAxis.count === 0) && (animations.needLength.count === 0))
+                     || (latteView && latteView.visibility.isHidden && !latteView.visibility.containsMouse && animations.needThickness.count === 0);
+        if (inNormalState && !wasNormal) {
+            updateMaskArea();
+        }
+    }
+
     Connections{
         target: animations.needBothAxis
-        function onCountChanged() { updateMaskArea(); }
+        function onCountChanged() { recomputeInNormalState(); }
     }
 
     Connections{
         target: animations.needLength
-        function onCountChanged() { updateMaskArea(); }
+        function onCountChanged() { recomputeInNormalState(); }
     }
 
     Connections{
         target: animations.needThickness
-        function onCountChanged() { updateMaskArea(); }
+        function onCountChanged() { recomputeInNormalState(); }
     }
 
     Connections{
@@ -128,11 +136,7 @@ Item{
 
     onIsFloatingInClientSideChanged: updateMaskArea();
 
-    onInNormalStateChanged: {
-        if (inNormalState) {
-            updateMaskArea();
-        }
-    }
+    Component.onCompleted: recomputeInNormalState()
 
     onInSlidingInChanged: {
         if (latteView && !inSlidingIn && latteView.positioner.inRelocationShowing) {
