@@ -102,7 +102,7 @@ Item {
         readonly property real requiredSpace: audioStreamIconBox.requiredSpace
 
         source: {
-            if (taskItem.muted || taskItem.volume <= 0) {
+            if (taskItem.hasAudioStream && (taskItem.muted || taskItem.volume <= 0)) {
                 return "audio-volume-muted-symbolic" + (Qt.application.layoutDirection === Qt.RightToLeft ? "-rtl" : "");
             }
 
