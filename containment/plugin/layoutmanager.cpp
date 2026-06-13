@@ -1842,9 +1842,7 @@ int LayoutManager::defaultInsertionIndex() const
         }
 
         const QString pluginId = applet->pluginMetaData().pluginId();
-        if (pluginId == QLatin1String("org.kde.plasma.systemtray")
-            || pluginId == QLatin1String("org.nomad.systemtray")
-            || pluginId == QLatin1String("org.kde.latte.plasmoid")) {
+        if (pluginId == QLatin1String("org.kde.latte.plasmoid")) {
             boundaryIds.insert(appletId);
         }
     }
