@@ -2,6 +2,12 @@
 
 All notable changes to Latte Dock NG are documented in this file.
 
+## [v1.1.22] - 2026-06-13
+
+### Fixed
+- Volume widget and systray volume no longer show incorrect muted state when first added to a dock after fresh install. New applet containers are now deferred to give PulseAudio time to respond before the applet renders.
+- Updating/reinstalling no longer silently deletes user custom dock configurations. The pre-clean step now preserves `~/.config/latte/` and saved layouts unless `--purge-user-data` is explicitly passed.
+
 ## [v1.1.21] - 2026-06-13
 
 ### Added
