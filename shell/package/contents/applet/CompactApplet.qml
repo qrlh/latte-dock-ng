@@ -316,6 +316,10 @@ PlasmaCore.ToolTipArea {
             LayoutMirroring.childrenInherit: true
 
             Layout.minimumWidth: root.fullRepresentation ? root.fullRepresentation.Layout.minimumWidth : 0
+            Layout.minimumHeight: root.fullRepresentation ? root.fullRepresentation.Layout.minimumHeight : 0
+
+            Layout.maximumWidth: root.fullRepresentation ? root.fullRepresentation.Layout.maximumWidth : Infinity
+            Layout.maximumHeight: root.fullRepresentation ? root.fullRepresentation.Layout.maximumHeight : Infinity
 
             implicitWidth: {
                 if (root.fullRepresentation !== null) {
