@@ -2,12 +2,13 @@
 
 All notable changes to Latte Dock NG are documented in this file.
 
-## [v1.1.24] - 2026-06-13
+## [v1.1.23] - 2026-06-13
 
 ### Fixed
-- Volume widget and systray volume icon no longer show false muted state when first added to a dock. The PulseAudio SinkModel is now driven by an Instantiator at startup, which triggers the actual data fetch and populates the sink list before any volume consumer queries it.
+- Volume widget and systray volume icon no longer show incorrect muted state when first added to a dock. PulseAudio output device subscription is primed at startup and a repeating safety timer forces plasma-pa's PreferredDevice to read the initial default sink state.
+- Updating/reinstalling no longer silently deletes user custom dock configurations. The pre-clean step now preserves `~/.config/latte/` and saved layouts unless `--purge-user-data` is explicitly passed.
 
-## [v1.1.23] - 2026-06-13
+## [v1.1.22] - 2026-06-13
 
 ### Fixed
 - Volume widget and systray volume icon no longer show incorrect muted state when first added after a cold system boot. PulseAudio output device (SinkModel) subscription is now primed at startup alongside the existing stream subscription.
