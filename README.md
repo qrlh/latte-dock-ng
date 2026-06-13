@@ -83,6 +83,7 @@ Minimum requirements:
 
  PlasmaWaylandProtocols >= 1.6
  Wayland::Client
+ LayerShellQt >= 6.0.0
 ```
 ### From my personal gentoo overlay for Gentoo Linux
 
@@ -99,8 +100,8 @@ git clone https://github.com/ruizhi-lab/latte-dock-ng.git
 cd latte-dock-ng
 mkdir build && cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=/usr
-make -j$(nproc)
-sudo make install
+cmake --build . --parallel $(nproc)
+sudo cmake --install .
 ```
 
 See the [installation instructions](./INSTALLATION.md) for distro-specific dependency setup.
