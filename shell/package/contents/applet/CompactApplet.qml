@@ -127,8 +127,7 @@ PlasmaCore.ToolTipArea {
         // Only text-heavy applets (digital clock, etc.) need wider slots.
         // Other external applets keep their existing fixed-slot behavior.
         var plugin = target.pluginName || "";
-        var isTextApplet = plugin.indexOf("digitalclock") >= 0
-                        || plugin.indexOf("analogclock") >= 0;
+        var isTextApplet = plugin.indexOf("digitalclock") >= 0;
 
         if (!isTextApplet) {
             return;
@@ -190,7 +189,7 @@ PlasmaCore.ToolTipArea {
             // Deferred to avoid touching the hot anchoring path for other applets.
             var pn = "";
             if (typeof Plasmoid !== "undefined") { pn = Plasmoid.pluginName || ""; }
-            if (pn.indexOf("digitalclock") >= 0 || pn.indexOf("analogclock") >= 0) {
+            if (pn.indexOf("digitalclock") >= 0) {
                 slotSizeCaptureTimer.start();
             }
         }
