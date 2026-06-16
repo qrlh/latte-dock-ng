@@ -230,6 +230,28 @@ target_link_libraries(indicatorunittest
 add_test(NAME indicatorunittest COMMAND indicatorunittest)
 set_tests_properties(indicatorunittest PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
+set(layoutunittest_SRCS
+    layoutunittest.cpp
+    ../app/layout/abstractlayout.cpp
+)
+
+add_executable(layoutunittest EXCLUDE_FROM_ALL ${layoutunittest_SRCS})
+
+target_include_directories(layoutunittest PRIVATE
+    ${CMAKE_BINARY_DIR}/app
+    ${CMAKE_CURRENT_SOURCE_DIR}/../app
+    ${CMAKE_CURRENT_SOURCE_DIR}/../app/layout
+)
+
+target_link_libraries(layoutunittest
+    Qt6::Core
+    Qt6::Test
+    KF6::ConfigCore
+    Plasma::Plasma
+)
+
+add_test(NAME layoutunittest COMMAND layoutunittest)
+
 set(wmunittest_SRCS
     wmunittest.cpp
     ../app/wm/tasktools.cpp

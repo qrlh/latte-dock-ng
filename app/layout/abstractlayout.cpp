@@ -228,7 +228,7 @@ Type AbstractLayout::type() const
     return Type::Abstract;
 }
 
-QList<Plasma::Types::Location> combinedFreeEdges(const QList<Plasma::Types::Location> &edges1, const QList<Plasma::Types::Location> &edges2)
+QList<Plasma::Types::Location> AbstractLayout::combinedFreeEdges(const QList<Plasma::Types::Location> &edges1, const QList<Plasma::Types::Location> &edges2)
 {
     QList<Plasma::Types::Location> validFreeEdges;
 
