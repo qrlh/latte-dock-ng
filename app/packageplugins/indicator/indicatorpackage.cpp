@@ -22,6 +22,7 @@ IndicatorPackage::IndicatorPackage(QObject *parent, const QVariantList &args)
 void IndicatorPackage::initPackage(KPackage::Package *package)
 {
     package->setDefaultPackageRoot(QStringLiteral("latte/indicators"));
+    package->setContentsPrefixPaths({QStringLiteral("package"), QStringLiteral("contents")});
 
     package->addDirectoryDefinition("config", QStringLiteral("config"));
     package->addDirectoryDefinition("ui", QStringLiteral("ui"));

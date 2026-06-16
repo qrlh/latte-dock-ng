@@ -107,6 +107,28 @@ target_link_libraries(coreunittest
 add_test(NAME coreunittest COMMAND coreunittest)
 set_tests_properties(coreunittest PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
+set(qmlsmoketest_SRCS
+    qmlsmoketest.cpp
+)
+
+add_executable(qmlsmoketest EXCLUDE_FROM_ALL ${qmlsmoketest_SRCS})
+add_dependencies(qmlsmoketest lattecoreplugin)
+
+target_compile_definitions(qmlsmoketest PRIVATE
+    LATTE_CORE_QMLDIR="${CMAKE_SOURCE_DIR}/declarativeimports/core/qmldir"
+    LATTE_CORE_PLUGIN="$<TARGET_FILE:lattecoreplugin>"
+)
+
+target_link_libraries(qmlsmoketest
+    Qt6::Core
+    Qt6::Gui
+    Qt6::Qml
+    Qt6::Test
+)
+
+add_test(NAME qmlsmoketest COMMAND qmlsmoketest)
+set_tests_properties(qmlsmoketest PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
 set(typesunittest_SRCS
     typesunittest.cpp
     ../containment/plugin/types.cpp

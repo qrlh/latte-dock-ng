@@ -19,6 +19,7 @@ class PackageUnitTest : public QObject
 private Q_SLOTS:
     void lattePackageResolvesShellDefinitions();
     void indicatorPackageLoadsFromPluginAndResolvesDirectories();
+    void indicatorPackageResolvesBundledDefaultIndicator();
 };
 
 void PackageUnitTest::lattePackageResolvesShellDefinitions()
@@ -58,6 +59,19 @@ void PackageUnitTest::indicatorPackageLoadsFromPluginAndResolvesDirectories()
     QVERIFY(package.filePath("data").endsWith(QStringLiteral("data")));
     QVERIFY(package.filePath("scripts").endsWith(QStringLiteral("code")));
     QVERIFY(package.filePath("translations").endsWith(QStringLiteral("locale")));
+}
+
+void PackageUnitTest::indicatorPackageResolvesBundledDefaultIndicator()
+{
+    KPackage::Package package = KPackage::PackageLoader::self()->loadPackage(
+        QStringLiteral("Latte/Indicator"),
+        QStringLiteral(LATTE_SOURCE_DIR "/indicators/default"));
+
+    QVERIFY(package.isValid());
+    QCOMPARE(package.metadata().pluginId(), QStringLiteral("org.kde.latte.default"));
+    QCOMPARE(package.metadata().value(QStringLiteral("X-Latte-MainScript")), QStringLiteral("ui/main.qml"));
+    QVERIFY(package.filePath("ui", QStringLiteral("main.qml")).endsWith(QStringLiteral("package/ui/main.qml")));
+    QVERIFY(package.filePath("config", QStringLiteral("main.xml")).endsWith(QStringLiteral("package/config/main.xml")));
 }
 
 QTEST_GUILESS_MAIN(PackageUnitTest)
