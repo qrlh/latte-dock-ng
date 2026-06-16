@@ -277,6 +277,30 @@ target_link_libraries(launcherunittest
 add_test(NAME launcherunittest COMMAND launcherunittest)
 set_tests_properties(launcherunittest PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
+set(genericsettingstest_SRCS
+    genericsettingstest.cpp
+    ../app/settings/generic/genericdialog.cpp
+    ../app/settings/generic/generichandler.cpp
+)
+
+add_executable(genericsettingstest EXCLUDE_FROM_ALL ${genericsettingstest_SRCS})
+
+target_include_directories(genericsettingstest PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../app/settings/generic
+)
+
+target_link_libraries(genericsettingstest
+    Qt6::Core
+    Qt6::Gui
+    Qt6::Test
+    Qt6::Widgets
+    KF6::I18n
+    KF6::XmlGui
+)
+
+add_test(NAME genericsettingstest COMMAND genericsettingstest)
+set_tests_properties(genericsettingstest PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
 set(schemecolorsunittest_SRCS
     schemecolorsunittest.cpp
     ../app/settings/detailsdialog/schemesmodel.cpp

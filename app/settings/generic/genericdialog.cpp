@@ -52,16 +52,8 @@ KMessageWidget *GenericDialog::initMessageWidget()
 
 void GenericDialog::deleteInlineMessages()
 {
-    //QVBoxLayout *vlayout = qobject_cast<QVBoxLayout *>(layout());
-
-    for (int i=0; i<children().count(); ++i) {
-        QObject *child = children()[i];
-        KMessageWidget *messagewidget = qobject_cast<KMessageWidget *>(child);
-
-        if(messagewidget) {
-            delete messagewidget;
-        }
-    }
+    const auto messageWidgets = findChildren<KMessageWidget *>(QString(), Qt::FindDirectChildrenOnly);
+    qDeleteAll(messageWidgets);
 }
 
 KMessageBox::ButtonCode GenericDialog::saveChangesConfirmation(const QString &text)
