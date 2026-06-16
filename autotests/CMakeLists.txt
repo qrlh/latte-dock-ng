@@ -126,6 +126,34 @@ target_link_libraries(typesunittest
 
 add_test(NAME typesunittest COMMAND typesunittest)
 
+find_package(PlasmaActivitiesStats REQUIRED)
+
+set(taskpluginunittest_SRCS
+    taskpluginunittest.cpp
+    ../plasmoid/plugin/contextmenuactionsbackend.cpp
+)
+
+add_executable(taskpluginunittest EXCLUDE_FROM_ALL ${taskpluginunittest_SRCS})
+
+target_include_directories(taskpluginunittest PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../plasmoid/plugin
+)
+
+target_link_libraries(taskpluginunittest
+    Qt6::Core
+    Qt6::Gui
+    Qt6::Test
+    Qt6::Widgets
+    KF6::I18n
+    KF6::KIOCore
+    KF6::KIOFileWidgets
+    KF6::KIOWidgets
+    Plasma::ActivitiesStats
+    Plasma::Plasma
+)
+
+add_test(NAME taskpluginunittest COMMAND taskpluginunittest)
+
 set(wmunittest_SRCS
     wmunittest.cpp
     ../app/wm/tasktools.cpp
