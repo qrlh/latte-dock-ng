@@ -160,6 +160,7 @@ set(packageunittest_SRCS
 )
 
 add_executable(packageunittest EXCLUDE_FROM_ALL ${packageunittest_SRCS})
+add_dependencies(packageunittest latte_packagestructure_indicator)
 
 target_compile_definitions(packageunittest PRIVATE
     LATTE_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
@@ -177,6 +178,7 @@ target_link_libraries(packageunittest
 )
 
 add_test(NAME packageunittest COMMAND packageunittest)
+set_tests_properties(packageunittest PROPERTIES ENVIRONMENT "QT_PLUGIN_PATH=${CMAKE_BINARY_DIR}/bin")
 
 set(wmunittest_SRCS
     wmunittest.cpp
