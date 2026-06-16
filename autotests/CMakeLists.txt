@@ -154,6 +154,30 @@ target_link_libraries(taskpluginunittest
 
 add_test(NAME taskpluginunittest COMMAND taskpluginunittest)
 
+set(packageunittest_SRCS
+    packageunittest.cpp
+    ../app/package/lattepackage.cpp
+)
+
+add_executable(packageunittest EXCLUDE_FROM_ALL ${packageunittest_SRCS})
+
+target_compile_definitions(packageunittest PRIVATE
+    LATTE_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+)
+
+target_include_directories(packageunittest PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../app/package
+)
+
+target_link_libraries(packageunittest
+    Qt6::Core
+    Qt6::Test
+    KF6::I18n
+    KF6::Package
+)
+
+add_test(NAME packageunittest COMMAND packageunittest)
+
 set(wmunittest_SRCS
     wmunittest.cpp
     ../app/wm/tasktools.cpp

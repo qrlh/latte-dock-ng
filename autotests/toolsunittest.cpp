@@ -15,6 +15,7 @@
 #include "../app/settings/settingsdialog/delegates/layoutnamedelegate.h"
 #include "../app/settings/settingsdialog/layoutsmodel.h"
 #include "../app/settings/viewsdialog/delegates/namedelegate.h"
+#include "../app/settings/viewsdialog/delegates/custommenuitemwidget.h"
 #include "../app/settings/viewsdialog/delegates/singleoptiondelegate.h"
 #include "../app/settings/viewsdialog/delegates/singletextdelegate.h"
 #include "../app/settings/viewsdialog/viewsmodel.h"
@@ -45,6 +46,7 @@ class ToolsUnitTest : public QObject
 private Q_SLOTS:
     void actionListWidgetItemStoresIdAndSortOrder();
     void activitiesDelegateWritesCheckedActivitiesAfterOk();
+    void customMenuItemWidgetSizesAndRendersLongText();
     void customComboBoxesStoreDecorationState();
     void layoutBackgroundDelegatePaintsLayoutIcon();
     void layoutCheckBoxDelegateTogglesUserRole();
@@ -176,6 +178,33 @@ void ToolsUnitTest::activitiesDelegateWritesCheckedActivitiesAfterOk()
     QCOMPARE(model.data(index, Qt::UserRole).toStringList(), QStringList({activity.id}));
 
     delete editor;
+}
+
+void ToolsUnitTest::customMenuItemWidgetSizesAndRendersLongText()
+{
+    QAction action(QStringLiteral("Very Long Layout Name That Should Not Be Clipped"));
+    action.setCheckable(true);
+    action.setChecked(true);
+
+    Latte::Settings::View::Widget::CustomMenuItemWidget widget(&action, nullptr);
+
+    Latte::Data::Screen screen;
+    screen.id = QStringLiteral("screen-one");
+    screen.name = QStringLiteral("Screen One");
+    screen.geometry = QRect(0, 0, 1920, 1080);
+    screen.isActive = true;
+    widget.setScreen(screen);
+
+    const QSize hint = widget.sizeHint();
+    QVERIFY(hint.width() > widget.fontMetrics().horizontalAdvance(action.text()));
+    QVERIFY(hint.height() > widget.fontMetrics().height());
+
+    widget.resize(hint);
+    QImage image(widget.size(), QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    widget.render(&image);
+
+    QVERIFY(hasPaintedPixel(image));
 }
 
 void ToolsUnitTest::customComboBoxesStoreDecorationState()
