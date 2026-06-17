@@ -661,3 +661,30 @@ target_link_libraries(declarativecoreunittest
 
 add_test(NAME declarativecoreunittest COMMAND declarativecoreunittest)
 set_tests_properties(declarativecoreunittest PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+set(containmentlayoutunittest_SRCS
+    containmentlayoutunittest.cpp
+    ../containment/plugin/layoutmanager.cpp
+)
+
+add_executable(containmentlayoutunittest EXCLUDE_FROM_ALL ${containmentlayoutunittest_SRCS})
+
+target_include_directories(containmentlayoutunittest PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../containment/plugin
+    ${CMAKE_CURRENT_SOURCE_DIR}/../app
+    ${CMAKE_BINARY_DIR}/containment
+)
+
+target_link_libraries(containmentlayoutunittest
+    Qt6::Core
+    Qt6::Gui
+    Qt6::Qml
+    Qt6::Quick
+    Qt6::Test
+    KF6::ConfigCore
+    Plasma::Plasma
+    Plasma::PlasmaQuick
+)
+
+add_test(NAME containmentlayoutunittest COMMAND containmentlayoutunittest)
+set_tests_properties(containmentlayoutunittest PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
