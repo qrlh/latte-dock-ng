@@ -66,6 +66,7 @@ private Q_SLOTS:
     void genericCopiesAndAssignsAllFields();
     void genericEqualityComparesIdAndName();
     void layoutActivityPredicatesReflectActivitySet();
+    void layoutDiagnosticPredicatesReflectCounts();
     void layoutEqualityIgnoresRuntimeState();
     void layoutTemplatePredicatesRespectUserAndTempPaths();
     void layoutColorSetDataPopulatesAllFields();
@@ -81,6 +82,7 @@ private Q_SLOTS:
     void uniqueIdInfoCopiesAndAssignsAllFields();
     void uniqueIdInfoEqualityComparesAllFields();
     void viewStatePredicatesReflectOriginAndCloneState();
+    void viewOriginSubcontainmentAndDiagnosticPredicates();
     void viewEqualityIgnoresRuntimeState();
     void viewStringShowsCombinedMoveOriginAndDestination();
     void viewsTableFindsSubcontainmentsAndTemporaryViews();
@@ -363,6 +365,21 @@ void DataUnitTest::layoutActivityPredicatesReflectActivitySet()
     QVERIFY(layout.isTemporary());
 }
 
+void DataUnitTest::layoutDiagnosticPredicatesReflectCounts()
+{
+    Layout layout;
+
+    QVERIFY(!layout.hasErrors());
+    QVERIFY(!layout.hasWarnings());
+
+    layout.errors = 1;
+    QVERIFY(layout.hasErrors());
+    QVERIFY(!layout.hasWarnings());
+
+    layout.warnings = 2;
+    QVERIFY(layout.hasWarnings());
+}
+
 void DataUnitTest::layoutEqualityIgnoresRuntimeState()
 {
     Layout first;
@@ -641,6 +658,34 @@ void DataUnitTest::viewStatePredicatesReflectOriginAndCloneState()
     QCOMPARE(view.originFile(), QStringLiteral("/tmp/view.layout.latte"));
     QCOMPARE(view.originLayout(), QStringLiteral("layout-id"));
     QCOMPARE(view.originView(), QStringLiteral("source-view-id"));
+}
+
+void DataUnitTest::viewOriginSubcontainmentAndDiagnosticPredicates()
+{
+    View view(QStringLiteral("view-id"), QStringLiteral("View"));
+    QVERIFY(!view.hasViewTemplateOrigin());
+    QVERIFY(!view.hasLayoutOrigin());
+    QVERIFY(!view.hasSubContainment(QStringLiteral("subcontainment-id")));
+    QVERIFY(!view.hasErrors());
+    QVERIFY(!view.hasWarnings());
+
+    view.setState(View::OriginFromViewTemplate,
+                  QStringLiteral("/tmp/template.layout.latte"),
+                  QStringLiteral("template-layout"),
+                  QStringLiteral("template-view"));
+    QVERIFY(view.hasViewTemplateOrigin());
+    QVERIFY(!view.hasLayoutOrigin());
+    QCOMPARE(view.originFile(), QStringLiteral("/tmp/template.layout.latte"));
+    QCOMPARE(view.originLayout(), QStringLiteral("template-layout"));
+    QCOMPARE(view.originView(), QStringLiteral("template-view"));
+
+    view.subcontainments << Generic(QStringLiteral("subcontainment-id"), QStringLiteral("Subcontainment"));
+    QVERIFY(view.hasSubContainment(QStringLiteral("subcontainment-id")));
+
+    view.errors = 1;
+    view.warnings = 2;
+    QVERIFY(view.hasErrors());
+    QVERIFY(view.hasWarnings());
 }
 
 void DataUnitTest::viewEqualityIgnoresRuntimeState()

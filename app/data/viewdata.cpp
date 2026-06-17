@@ -279,6 +279,16 @@ bool View::hasSubContainment(const QString &subId) const
     return subcontainments.containsId(subId);
 }
 
+bool View::hasErrors() const
+{
+    return errors > 0;
+}
+
+bool View::hasWarnings() const
+{
+    return warnings > 0;
+}
+
 QString View::originFile() const
 {
     return m_originFile;
