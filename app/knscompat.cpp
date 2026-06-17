@@ -9,6 +9,7 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QLibraryInfo>
 #include <QRegularExpression>
 #include <QStandardPaths>
 #include <QTextStream>
@@ -224,7 +225,72 @@ QuestionAsker 1.1 QuestionAsker.qml
 UploadPage 1.85 UploadPage.qml
 )qmldir";
 
-static constexpr auto kSystemQmlBase = "/usr/lib64/qt6/qml";
+static constexpr auto kDisableCompatEnv = "LATTE_DISABLE_KNS_COMPAT";
+static constexpr auto kSystemRootsEnv = "LATTE_KNS_COMPAT_SYSTEM_QML_ROOTS";
+
+static QStringList splitPathList(const QString &paths)
+{
+    QStringList result;
+
+    for (const QString &path : paths.split(QDir::listSeparator(), Qt::SkipEmptyParts)) {
+        const QString cleaned = QDir::cleanPath(path);
+        if (!cleaned.isEmpty() && !result.contains(cleaned)) {
+            result << cleaned;
+        }
+    }
+
+    return result;
+}
+
+static QStringList systemQmlBaseCandidates()
+{
+    if (qEnvironmentVariableIsSet(kSystemRootsEnv)) {
+        return splitPathList(QString::fromLocal8Bit(qgetenv(kSystemRootsEnv)));
+    }
+
+    QStringList candidates;
+    const auto addCandidate = [&candidates](const QString &path) {
+        const QString cleaned = QDir::cleanPath(path);
+        if (!cleaned.isEmpty() && !candidates.contains(cleaned)) {
+            candidates << cleaned;
+        }
+    };
+
+    addCandidate(QLibraryInfo::path(QLibraryInfo::QmlImportsPath));
+    addCandidate(QStringLiteral("/usr/lib64/qt6/qml"));
+    addCandidate(QStringLiteral("/usr/lib/qt6/qml"));
+    addCandidate(QStringLiteral("/usr/lib/x86_64-linux-gnu/qt6/qml"));
+
+    return candidates;
+}
+
+static bool systemQmlBaseIsComplete(const QString &qmlBase)
+{
+    if (qmlBase.isEmpty() || !QFileInfo(qmlBase).isDir()) {
+        return false;
+    }
+
+    const QString templatesDir = qmlBase + QStringLiteral("/org/kde/kirigami/templates");
+    const QString newstuffDir = qmlBase + QStringLiteral("/org/kde/newstuff");
+    const QString controlsDir = qmlBase + QStringLiteral("/org/kde/kirigami/controls");
+
+    return QFileInfo(templatesDir).isDir()
+            && QFileInfo(templatesDir + QStringLiteral("/private")).isDir()
+            && QFileInfo(newstuffDir).isDir()
+            && QFileInfo(controlsDir).isDir()
+            && QFileInfo(controlsDir + QStringLiteral("/qmldir")).isFile();
+}
+
+static QString resolvedSystemQmlBase()
+{
+    for (const QString &candidate : systemQmlBaseCandidates()) {
+        if (systemQmlBaseIsComplete(candidate)) {
+            return candidate;
+        }
+    }
+
+    return QString();
+}
 
 static bool writeIfChanged(const QString &path, const QString &content)
 {
@@ -355,6 +421,10 @@ static void symlinkPrivDir(const QDir &srcDir, const QString &dstPath, const QSt
 
 static bool symlinkChecked(const QString &target, const QString &link)
 {
+    if (!QFileInfo::exists(target)) {
+        return false;
+    }
+
     QFileInfo li(link);
     if (li.isSymLink() && li.symLinkTarget() == target) {
         return false; // already correct
@@ -366,6 +436,11 @@ static bool symlinkChecked(const QString &target, const QString &link)
 
 void ensureKnsCompat()
 {
+    if (qEnvironmentVariableIntValue(kDisableCompatEnv) == 1) {
+        qDebug() << "KnsCompat: disabled by" << kDisableCompatEnv;
+        return;
+    }
+
     const QString stampPath = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)
                               + QStringLiteral("/latte-dock-ng/kns-compat.stamp");
     int currentVersion = 0;
@@ -390,10 +465,16 @@ void ensureKnsCompat()
         return;
     }
 
+    const QString systemQmlBase = resolvedSystemQmlBase();
+    if (systemQmlBase.isEmpty()) {
+        qWarning() << "KnsCompat: system QML root not found, compatibility overrides were not created";
+        return;
+    }
+
     qDebug() << "KnsCompat: setting up KNS dialog compatibility overrides (v" << kCompatVersion << ")";
 
     // --- Kirigami templates module (pure filesystem, no plugin) ---
-    const QString sysTemplates = QLatin1String(kSystemQmlBase) + QStringLiteral("/org/kde/kirigami/templates");
+    const QString sysTemplates = systemQmlBase + QStringLiteral("/org/kde/kirigami/templates");
 
     writeIfChanged(templatesDir + QStringLiteral("/qmldir"), QLatin1String(kTemplatesQmldir));
 
@@ -416,7 +497,7 @@ void ensureKnsCompat()
     }
 
     // --- Newstuff module (with plugin, no prefer) ---
-    const QString sysNewstuff = QLatin1String(kSystemQmlBase) + QStringLiteral("/org/kde/newstuff");
+    const QString sysNewstuff = systemQmlBase + QStringLiteral("/org/kde/newstuff");
 
     writeIfChanged(newstuffDir + QStringLiteral("/qmldir"), QLatin1String(kNewstuffQmldir));
 
@@ -448,7 +529,7 @@ void ensureKnsCompat()
     }
 
     // --- Kirigami controls module (with plugin, no prefer; patched HandleButton) ---
-    const QString sysControls = QLatin1String(kSystemQmlBase) + QStringLiteral("/org/kde/kirigami/controls");
+    const QString sysControls = systemQmlBase + QStringLiteral("/org/kde/kirigami/controls");
 
     // Use the system qmldir but strip the prefer line
     {
