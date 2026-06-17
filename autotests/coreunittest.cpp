@@ -21,7 +21,9 @@ private Q_SLOTS:
     void extrasFormatRectsAndEnums();
     void extrasCompareFloatingPointValues();
     void toolsCalculateColorBrightnessAndLumina();
+    void toolsCalculatePrimaryColorWeights();
     void environmentExposesConstantsAndVersionEncoding();
+    void environmentEncodesVersionBytes();
     void environmentReturnsThemeIconNamesAsSources();
     void environmentDescribesIconAndStringSources();
     void quickWindowSystemReportsWaylandCompositing();
@@ -51,6 +53,19 @@ void CoreUnitTest::toolsCalculateColorBrightnessAndLumina()
     QCOMPARE(tools.colorLumina(QColor(Qt::black)), 0.0f);
 }
 
+void CoreUnitTest::toolsCalculatePrimaryColorWeights()
+{
+    Latte::Tools tools;
+
+    QVERIFY(qAbs(tools.colorBrightness(QColor(Qt::red)) - 76.245f) < 0.001f);
+    QVERIFY(qAbs(tools.colorBrightness(QColor(Qt::green)) - 149.685f) < 0.001f);
+    QVERIFY(qAbs(tools.colorBrightness(QColor(Qt::blue)) - 29.07f) < 0.001f);
+
+    QVERIFY(qAbs(tools.colorLumina(QColor(Qt::red)) - 0.2126f) < 0.0001f);
+    QVERIFY(qAbs(tools.colorLumina(QColor(Qt::green)) - 0.7152f) < 0.0001f);
+    QVERIFY(qAbs(tools.colorLumina(QColor(Qt::blue)) - 0.0722f) < 0.0001f);
+}
+
 void CoreUnitTest::environmentExposesConstantsAndVersionEncoding()
 {
     Latte::Environment environment;
@@ -60,6 +75,16 @@ void CoreUnitTest::environmentExposesConstantsAndVersionEncoding()
     QCOMPARE(environment.longDuration(), 240u);
     QCOMPARE(environment.iconThemeVersion(), 0u);
     QCOMPARE(environment.makeVersion(6, 10, 3), 0x060a03u);
+}
+
+void CoreUnitTest::environmentEncodesVersionBytes()
+{
+    Latte::Environment environment;
+
+    QCOMPARE(environment.makeVersion(0, 0, 0), 0x000000u);
+    QCOMPARE(environment.makeVersion(1, 0, 0), 0x010000u);
+    QCOMPARE(environment.makeVersion(1, 2, 0), 0x010200u);
+    QCOMPARE(environment.makeVersion(255, 255, 255), 0xffffffu);
 }
 
 void CoreUnitTest::environmentReturnsThemeIconNamesAsSources()
