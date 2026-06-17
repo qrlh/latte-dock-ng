@@ -491,3 +491,43 @@ target_link_libraries(toolsunittest
 
 add_test(NAME toolsunittest COMMAND toolsunittest)
 set_tests_properties(toolsunittest PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+
+set(knscompatunittest_SRCS
+    knscompatunittest.cpp
+    ../app/knscompat.cpp
+)
+
+add_executable(knscompatunittest EXCLUDE_FROM_ALL ${knscompatunittest_SRCS})
+
+target_include_directories(knscompatunittest PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../app
+)
+
+target_link_libraries(knscompatunittest
+    Qt6::Core
+    Qt6::Test
+)
+
+add_test(NAME knscompatunittest COMMAND knscompatunittest)
+
+set(interfacesunittest_SRCS
+    interfacesunittest.cpp
+    ../app/declarativeimports/interfaces.cpp
+)
+
+add_executable(interfacesunittest EXCLUDE_FROM_ALL ${interfacesunittest_SRCS})
+
+target_include_directories(interfacesunittest PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../app/declarativeimports
+)
+
+target_link_libraries(interfacesunittest
+    Qt6::Core
+    Qt6::Gui
+    Qt6::Quick
+    Qt6::Test
+    Plasma::PlasmaQuick
+)
+
+add_test(NAME interfacesunittest COMMAND interfacesunittest)

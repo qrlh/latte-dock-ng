@@ -674,6 +674,8 @@ QRegion Corona::availableScreenRegionWithCriteria(int id,
                 }
                 break;
             }
+            default:
+                continue;
             }
 
             // Usually availableScreenRect is used by the desktop,

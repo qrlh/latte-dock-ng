@@ -99,7 +99,7 @@ Menu::~Menu()
     m_actions.clear();
 }
 
-void Menu::restore(const KConfigGroup &config)
+void Menu::restore(const KConfigGroup &)
 {
     if (!m_actions.isEmpty()) {
         return;

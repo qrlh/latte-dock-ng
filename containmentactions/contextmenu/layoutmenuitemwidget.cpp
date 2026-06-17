@@ -76,7 +76,7 @@ QSize LayoutMenuItemWidget::minimumSizeHint() const
     return sizeHint();
 }
 
-void LayoutMenuItemWidget::paintEvent(QPaintEvent* e)
+void LayoutMenuItemWidget::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
     painter.save();

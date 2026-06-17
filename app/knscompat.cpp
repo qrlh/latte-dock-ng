@@ -382,9 +382,11 @@ void ensureKnsCompat()
     const QString qmlBase = QDir::homePath() + QStringLiteral("/.local/lib64/qt6/qml");
     const QString templatesDir = qmlBase + QStringLiteral("/org/kde/kirigami/templates");
     const QString newstuffDir = qmlBase + QStringLiteral("/org/kde/newstuff");
+    const QString controlsDir = qmlBase + QStringLiteral("/org/kde/kirigami/controls");
 
     if (!needsUpdate && QFile::exists(templatesDir + QStringLiteral("/qmldir"))
-        && QFile::exists(newstuffDir + QStringLiteral("/qmldir"))) {
+        && QFile::exists(newstuffDir + QStringLiteral("/qmldir"))
+        && QFile::exists(controlsDir + QStringLiteral("/qmldir"))) {
         return;
     }
 
@@ -447,7 +449,6 @@ void ensureKnsCompat()
 
     // --- Kirigami controls module (with plugin, no prefer; patched HandleButton) ---
     const QString sysControls = QLatin1String(kSystemQmlBase) + QStringLiteral("/org/kde/kirigami/controls");
-    const QString controlsDir = qmlBase + QStringLiteral("/org/kde/kirigami/controls");
 
     // Use the system qmldir but strip the prefer line
     {
@@ -479,6 +480,7 @@ void ensureKnsCompat()
                    {QStringLiteral("globaltoolbar/HandleButton.qml")});
 
     // Write stamp
+    QDir().mkpath(QFileInfo(stampPath).absolutePath());
     QFile f(stampPath);
     if (f.open(QFile::WriteOnly | QFile::Truncate)) {
         f.write(QByteArray::number(kCompatVersion));
