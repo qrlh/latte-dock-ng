@@ -3,60 +3,19 @@
     SPDX-License-Identifier: GPL-2.0-or-later
 */
 
-#include "actionlistwidgetitem.h"
 #include "generictools.h"
 #include "genericviewtools.h"
-#include "layoutscombobox.h"
-#include "../app/settings/detailsdialog/delegates/schemecmbitemdelegate.h"
-#include "../app/settings/detailsdialog/schemesmodel.h"
-#include "../app/settings/settingsdialog/delegates/activitiesdelegate.h"
-#include "../app/settings/settingsdialog/delegates/backgrounddelegate.h"
-#include "../app/settings/settingsdialog/delegates/layoutcmbitemdelegate.h"
-#include "../app/settings/settingsdialog/delegates/layoutnamedelegate.h"
-#include "../app/settings/settingsdialog/layoutsmodel.h"
-#include "../app/settings/viewsdialog/delegates/namedelegate.h"
-#include "../app/settings/viewsdialog/delegates/custommenuitemwidget.h"
-#include "../app/settings/viewsdialog/delegates/singleoptiondelegate.h"
-#include "../app/settings/viewsdialog/delegates/singletextdelegate.h"
-#include "../app/settings/viewsdialog/viewsmodel.h"
-#include "normalcheckboxdelegate.h"
-#include "screendata.h"
-#include "screensmodel.h"
-#include "../app/settings/settingsdialog/delegates/checkboxdelegate.h"
-#include "../app/settings/screensdialog/delegates/checkboxdelegate.h"
-#include "schemescombobox.h"
+#include "view/viewgeometryhelpers.h"
 
-#include <QAbstractTableModel>
 #include <QImage>
-#include <QKeyEvent>
-#include <QLineEdit>
-#include <QMenu>
-#include <QMouseEvent>
-#include <QPainter>
-#include <QPushButton>
-#include <QStandardItemModel>
 #include <QStyleOptionViewItem>
 #include <QTest>
-#include <QWidget>
 
 class ToolsUnitTest : public QObject
 {
     Q_OBJECT
 
 private Q_SLOTS:
-    void actionListWidgetItemStoresIdAndSortOrder();
-    void activitiesDelegateWritesCheckedActivitiesAfterOk();
-    void customMenuItemWidgetSizesAndRendersLongText();
-    void customComboBoxesStoreDecorationState();
-    void layoutBackgroundDelegatePaintsLayoutIcon();
-    void layoutCheckBoxDelegateTogglesUserRole();
-    void layoutComboItemDelegatePaintsIconAndText();
-    void layoutNameDelegateEditsUserRole();
-    void normalCheckBoxDelegateTogglesCheckState();
-    void screensCheckBoxDelegateOnlyTogglesRemovableScreens();
-    void schemeComboItemDelegatePaintsColorPreview();
-    void singleOptionDelegateWritesSelectedChoice();
-    void singleTextAndNameDelegatesPaintViewData();
     void styleStatePredicatesReflectOptionState();
     void colorGroupFollowsEnabledActiveAndSelectedState();
     void horizontalAlignmentPrefersCenterThenRightThenLeft();
@@ -65,6 +24,9 @@ private Q_SLOTS:
     void screenMaxLengthUsesOddAspectLength();
     void screenDrawingReturnsAvailableInnerRect();
     void viewDrawingPaintsHorizontalAndVerticalEdges();
+    void horizontalDockScreenEdgeCornerPolicy();
+    void verticalDockExternalPanelAvoidancePolicy();
+    void verticalDockExternalPanelGeometryKeepsScreenThicknessAxis();
 };
 
 namespace {
@@ -82,441 +44,6 @@ bool hasPaintedPixel(const QImage &image)
     return false;
 }
 
-class ScreenDelegateModel : public QAbstractTableModel
-{
-public:
-    int rowCount(const QModelIndex &parent = QModelIndex()) const override
-    {
-        return parent.isValid() ? 0 : 1;
-    }
-
-    int columnCount(const QModelIndex &parent = QModelIndex()) const override
-    {
-        return parent.isValid() ? 0 : 1;
-    }
-
-    QVariant data(const QModelIndex &index, int role) const override
-    {
-        if (!index.isValid()) {
-            return {};
-        }
-
-        if (role == Qt::CheckStateRole) {
-            return m_checked ? Qt::Checked : Qt::Unchecked;
-        } else if (role == Latte::Settings::Model::Screens::SCREENDATAROLE) {
-            return QVariant::fromValue(m_screen);
-        }
-
-        return {};
-    }
-
-    bool setData(const QModelIndex &index, const QVariant &value, int role) override
-    {
-        if (!index.isValid() || role != Qt::CheckStateRole) {
-            return false;
-        }
-
-        m_checked = value.toBool();
-        return true;
-    }
-
-    Latte::Data::Screen m_screen;
-    bool m_checked{false};
-};
-
-}
-
-void ToolsUnitTest::actionListWidgetItemStoresIdAndSortOrder()
-{
-    using Latte::Settings::ActionsDialog::ActionListWidgetItem;
-
-    ActionListWidgetItem first(QIcon(), QStringLiteral("First"), 20, QStringLiteral("first"));
-    ActionListWidgetItem second(QIcon(), QStringLiteral("Second"), 10, QStringLiteral("second"));
-
-    QCOMPARE(first.data(ActionListWidgetItem::IDROLE).toString(), QStringLiteral("first"));
-    QCOMPARE(first.data(ActionListWidgetItem::ORDERROLE).toInt(), 20);
-    QVERIFY(second < first);
-    QVERIFY(!(first < second));
-}
-
-void ToolsUnitTest::activitiesDelegateWritesCheckedActivitiesAfterOk()
-{
-    Latte::Settings::Layout::Delegate::Activities delegate(nullptr);
-    QStandardItemModel model(1, 1);
-    const QModelIndex index = model.index(0, 0);
-
-    Latte::Data::Activity activity;
-    activity.id = QStringLiteral("activity-one");
-    activity.name = QStringLiteral("Activity One");
-    activity.icon = QStringLiteral("activities");
-    activity.state = Latte::Data::Activity::Running;
-
-    Latte::Data::ActivitiesTable activitiesTable;
-    activitiesTable << activity;
-
-    model.setData(index, QStringList(), Qt::UserRole);
-    model.setData(index, QStringList({activity.id}), Latte::Settings::Model::Layouts::ALLACTIVITIESSORTEDROLE);
-    model.setData(index, QVariant::fromValue(activitiesTable), Latte::Settings::Model::Layouts::ALLACTIVITIESDATAROLE);
-
-    QStyleOptionViewItem option;
-    option.rect = QRect(0, 0, 160, 28);
-
-    QWidget *editor = delegate.createEditor(nullptr, option, index);
-    QPushButton *button = qobject_cast<QPushButton *>(editor);
-    QVERIFY(button);
-    QVERIFY(button->menu());
-
-    QAction *activityAction = button->menu()->actions().constFirst();
-    QCOMPARE(activityAction->data().toString(), activity.id);
-    activityAction->setChecked(true);
-
-    delegate.setModelData(editor, &model, index);
-    QCOMPARE(model.data(index, Qt::UserRole).toStringList(), QStringList());
-
-    button->setProperty("OKPRESSED", true);
-    delegate.setModelData(editor, &model, index);
-    QCOMPARE(model.data(index, Qt::UserRole).toStringList(), QStringList({activity.id}));
-
-    delete editor;
-}
-
-void ToolsUnitTest::customMenuItemWidgetSizesAndRendersLongText()
-{
-    QAction action(QStringLiteral("Very Long Layout Name That Should Not Be Clipped"));
-    action.setCheckable(true);
-    action.setChecked(true);
-
-    Latte::Settings::View::Widget::CustomMenuItemWidget widget(&action, nullptr);
-
-    Latte::Data::Screen screen;
-    screen.id = QStringLiteral("screen-one");
-    screen.name = QStringLiteral("Screen One");
-    screen.geometry = QRect(0, 0, 1920, 1080);
-    screen.isActive = true;
-    widget.setScreen(screen);
-
-    const QSize hint = widget.sizeHint();
-    QVERIFY(hint.width() > widget.fontMetrics().horizontalAdvance(action.text()));
-    QVERIFY(hint.height() > widget.fontMetrics().height());
-
-    widget.resize(hint);
-    QImage image(widget.size(), QImage::Format_ARGB32_Premultiplied);
-    image.fill(Qt::transparent);
-    widget.render(&image);
-
-    QVERIFY(hasPaintedPixel(image));
-}
-
-void ToolsUnitTest::customComboBoxesStoreDecorationState()
-{
-    Latte::Settings::LayoutsComboBox layoutsCombo;
-    Latte::Data::LayoutIcon icon;
-    icon.name = QStringLiteral("layout-icon");
-    icon.isBackgroundFile = true;
-
-    layoutsCombo.setLayoutIcon(icon);
-    QCOMPARE(layoutsCombo.layoutIcon().name, QStringLiteral("layout-icon"));
-    QCOMPARE(layoutsCombo.layoutIcon().isBackgroundFile, true);
-
-    Latte::Settings::SchemesComboBox schemesCombo;
-    schemesCombo.setBackgroundColor(Qt::black);
-    schemesCombo.setTextColor(Qt::white);
-    QCOMPARE(schemesCombo.backgroundColor(), QColor(Qt::black));
-    QCOMPARE(schemesCombo.textColor(), QColor(Qt::white));
-}
-
-void ToolsUnitTest::layoutBackgroundDelegatePaintsLayoutIcon()
-{
-    Latte::Settings::Layout::Delegate::BackgroundDelegate delegate;
-    QStandardItemModel model(1, 1);
-    const QModelIndex index = model.index(0, 0);
-
-    Latte::Data::LayoutIcon icon;
-    icon.name = QStringLiteral("folder");
-    model.setData(index, QVariant::fromValue(icon), Qt::UserRole);
-
-    QStyleOptionViewItem option;
-    option.rect = QRect(0, 0, 48, 32);
-    option.state = QStyle::State_Enabled | QStyle::State_Selected;
-    QWidget widget;
-    option.widget = &widget;
-
-    QImage image(option.rect.size(), QImage::Format_ARGB32_Premultiplied);
-    image.fill(Qt::transparent);
-    QPainter painter(&image);
-    delegate.paint(&painter, option, index);
-    painter.end();
-
-    QVERIFY(hasPaintedPixel(image));
-}
-
-void ToolsUnitTest::layoutCheckBoxDelegateTogglesUserRole()
-{
-    Latte::Settings::Layout::Delegate::CheckBox delegate;
-    QStandardItemModel model(1, Latte::Settings::Model::Layouts::ACTIVITYCOLUMN + 1);
-    const QModelIndex index = model.index(0, Latte::Settings::Model::Layouts::MENUCOLUMN);
-    model.setData(index, false, Qt::UserRole);
-    model.setData(index, false, Latte::Settings::Model::Layouts::ORIGINALISSHOWNINMENUROLE);
-
-    QStyleOptionViewItem option;
-    option.rect = QRect(0, 0, 20, 20);
-
-    QMouseEvent release(QEvent::MouseButtonRelease,
-                        QPointF(10, 10),
-                        QPointF(10, 10),
-                        QPointF(10, 10),
-                        Qt::LeftButton,
-                        Qt::LeftButton,
-                        Qt::NoModifier);
-    QVERIFY(!delegate.editorEvent(&release, &model, option, index));
-    QCOMPARE(model.data(index, Qt::UserRole).toBool(), false);
-
-    QMouseEvent doubleClick(QEvent::MouseButtonDblClick,
-                            QPointF(10, 10),
-                            QPointF(10, 10),
-                            QPointF(10, 10),
-                            Qt::LeftButton,
-                            Qt::LeftButton,
-                            Qt::NoModifier);
-    QVERIFY(delegate.editorEvent(&doubleClick, &model, option, index));
-    QCOMPARE(model.data(index, Qt::UserRole).toBool(), true);
-
-    QKeyEvent selectKey(QEvent::KeyPress, Qt::Key_Select, Qt::NoModifier);
-    QVERIFY(delegate.editorEvent(&selectKey, &model, option, index));
-    QCOMPARE(model.data(index, Qt::UserRole).toBool(), false);
-}
-
-void ToolsUnitTest::layoutComboItemDelegatePaintsIconAndText()
-{
-    Latte::Settings::Layout::Delegate::LayoutCmbItemDelegate delegate;
-    QStandardItemModel model(1, 1);
-    const QModelIndex index = model.index(0, 0);
-
-    Latte::Data::LayoutIcon icon;
-    icon.name = QStringLiteral("folder");
-    model.setData(index, QVariant::fromValue(icon), Latte::Settings::Model::Layouts::BACKGROUNDUSERROLE);
-    model.setData(index, QStringLiteral("Layout"), Qt::DisplayRole);
-
-    QStyleOptionViewItem option;
-    option.rect = QRect(0, 0, 120, 32);
-    option.state = QStyle::State_Enabled | QStyle::State_Selected;
-    QWidget widget;
-    option.widget = &widget;
-
-    QImage image(option.rect.size(), QImage::Format_ARGB32_Premultiplied);
-    image.fill(Qt::transparent);
-    QPainter painter(&image);
-    delegate.paint(&painter, option, index);
-    painter.end();
-
-    QVERIFY(hasPaintedPixel(image));
-}
-
-void ToolsUnitTest::layoutNameDelegateEditsUserRole()
-{
-    Latte::Settings::Layout::Delegate::LayoutName delegate;
-    QStandardItemModel model(1, 1);
-    const QModelIndex index = model.index(0, 0);
-    model.setData(index, QStringLiteral("Original"), Qt::UserRole);
-
-    QStyleOptionViewItem option;
-    QWidget *editor = delegate.createEditor(nullptr, option, index);
-    QLineEdit *lineEdit = qobject_cast<QLineEdit *>(editor);
-    QVERIFY(lineEdit);
-
-    delegate.setEditorData(editor, index);
-    QCOMPARE(lineEdit->text(), QStringLiteral("Original"));
-
-    lineEdit->setText(QStringLiteral("Updated"));
-    delegate.setModelData(editor, &model, index);
-    QCOMPARE(model.data(index, Qt::UserRole).toString(), QStringLiteral("Updated"));
-
-    delete editor;
-}
-
-void ToolsUnitTest::normalCheckBoxDelegateTogglesCheckState()
-{
-    Latte::Settings::Applets::Delegate::NormalCheckBox delegate;
-    QStandardItemModel model(1, 1);
-    const QModelIndex index = model.index(0, 0);
-    model.setData(index, Qt::Unchecked, Qt::CheckStateRole);
-
-    QStyleOptionViewItem option;
-    option.rect = QRect(0, 0, 20, 20);
-
-    QKeyEvent ignoredKey(QEvent::KeyPress, Qt::Key_Return, Qt::NoModifier);
-    QVERIFY(!delegate.editorEvent(&ignoredKey, &model, option, index));
-    QCOMPARE(model.data(index, Qt::CheckStateRole).value<Qt::CheckState>(), Qt::Unchecked);
-
-    QKeyEvent spaceKey(QEvent::KeyPress, Qt::Key_Space, Qt::NoModifier);
-    QVERIFY(delegate.editorEvent(&spaceKey, &model, option, index));
-    QCOMPARE(model.data(index, Qt::CheckStateRole).value<Qt::CheckState>(), Qt::Checked);
-
-    QMouseEvent outsideRelease(QEvent::MouseButtonRelease,
-                               QPointF(40, 40),
-                               QPointF(40, 40),
-                               QPointF(40, 40),
-                               Qt::LeftButton,
-                               Qt::LeftButton,
-                               Qt::NoModifier);
-    QVERIFY(!delegate.editorEvent(&outsideRelease, &model, option, index));
-    QCOMPARE(model.data(index, Qt::CheckStateRole).value<Qt::CheckState>(), Qt::Checked);
-
-    QMouseEvent insideRelease(QEvent::MouseButtonRelease,
-                              QPointF(10, 10),
-                              QPointF(10, 10),
-                              QPointF(10, 10),
-                              Qt::LeftButton,
-                              Qt::LeftButton,
-                              Qt::NoModifier);
-    QVERIFY(delegate.editorEvent(&insideRelease, &model, option, index));
-    QCOMPARE(model.data(index, Qt::CheckStateRole).value<Qt::CheckState>(), Qt::Unchecked);
-}
-
-void ToolsUnitTest::screensCheckBoxDelegateOnlyTogglesRemovableScreens()
-{
-    Latte::Settings::Screens::Delegate::CheckBox delegate;
-    ScreenDelegateModel model;
-    const QModelIndex index = model.index(0, 0);
-
-    model.m_screen.id = QStringLiteral("10");
-    model.m_screen.name = QStringLiteral("DP-1");
-    model.m_screen.isRemovable = false;
-
-    QStyleOptionViewItem option;
-    option.rect = QRect(0, 0, 40, 20);
-
-    QKeyEvent spaceKey(QEvent::KeyPress, Qt::Key_Space, Qt::NoModifier);
-    QVERIFY(!delegate.editorEvent(&spaceKey, &model, option, index));
-    QCOMPARE(model.data(index, Qt::CheckStateRole).value<Qt::CheckState>(), Qt::Unchecked);
-
-    model.m_screen.isRemovable = true;
-    QVERIFY(delegate.editorEvent(&spaceKey, &model, option, index));
-    QCOMPARE(model.data(index, Qt::CheckStateRole).value<Qt::CheckState>(), Qt::Checked);
-
-    QMouseEvent outsideRelease(QEvent::MouseButtonRelease,
-                               QPointF(80, 80),
-                               QPointF(80, 80),
-                               QPointF(80, 80),
-                               Qt::LeftButton,
-                               Qt::LeftButton,
-                               Qt::NoModifier);
-    QVERIFY(!delegate.editorEvent(&outsideRelease, &model, option, index));
-    QCOMPARE(model.data(index, Qt::CheckStateRole).value<Qt::CheckState>(), Qt::Checked);
-}
-
-void ToolsUnitTest::schemeComboItemDelegatePaintsColorPreview()
-{
-    Latte::Settings::Details::Delegate::SchemeCmbItemDelegate delegate;
-    QStandardItemModel model(1, 1);
-    const QModelIndex index = model.index(0, 0);
-
-    model.setData(index, QStringLiteral("Breeze Dark"), Qt::DisplayRole);
-    model.setData(index, QColor(Qt::white), Latte::Settings::Model::Schemes::TEXTCOLORROLE);
-    model.setData(index, QColor(Qt::black), Latte::Settings::Model::Schemes::BACKGROUNDCOLORROLE);
-
-    QStyleOptionViewItem option;
-    option.rect = QRect(0, 0, 140, 32);
-    option.state = QStyle::State_Enabled | QStyle::State_Selected;
-    QWidget widget;
-    option.widget = &widget;
-
-    QImage image(option.rect.size(), QImage::Format_ARGB32_Premultiplied);
-    image.fill(Qt::transparent);
-    QPainter painter(&image);
-    delegate.paint(&painter, option, index);
-    painter.end();
-
-    QVERIFY(hasPaintedPixel(image));
-}
-
-void ToolsUnitTest::singleOptionDelegateWritesSelectedChoice()
-{
-    Latte::Settings::View::Delegate::SingleOption delegate(nullptr);
-    QStandardItemModel model(1, Latte::Settings::Model::Views::LASTCOLUMN);
-    const QModelIndex index = model.index(0, Latte::Settings::Model::Views::SCREENCOLUMN);
-
-    Latte::Data::Screen firstScreen;
-    firstScreen.id = QStringLiteral("screen-one");
-    firstScreen.name = QStringLiteral("Screen One");
-    firstScreen.geometry = QRect(0, 0, 1920, 1080);
-    firstScreen.isActive = true;
-
-    Latte::Data::Screen secondScreen;
-    secondScreen.id = QStringLiteral("screen-two");
-    secondScreen.name = QStringLiteral("Screen Two");
-    secondScreen.geometry = QRect(1920, 0, 1920, 1080);
-
-    Latte::Data::ScreensTable screens;
-    screens << firstScreen;
-    screens << secondScreen;
-
-    model.setData(index, firstScreen.id, Qt::UserRole);
-    model.setData(index, firstScreen.name, Qt::DisplayRole);
-    model.setData(index, QVariant::fromValue(screens), Latte::Settings::Model::Views::CHOICESROLE);
-
-    QStyleOptionViewItem option;
-    option.rect = QRect(0, 0, 180, 28);
-
-    QWidget *editor = delegate.createEditor(nullptr, option, index);
-    QPushButton *button = qobject_cast<QPushButton *>(editor);
-    QVERIFY(button);
-    QVERIFY(button->menu());
-    QCOMPARE(button->menu()->actions().count(), 2);
-
-    delegate.setModelData(editor, &model, index);
-    QCOMPARE(model.data(index, Qt::UserRole).toString(), firstScreen.id);
-
-    button->menu()->actions().at(1)->trigger();
-    delegate.setModelData(editor, &model, index);
-    QCOMPARE(model.data(index, Qt::UserRole).toString(), secondScreen.id);
-
-    delete editor;
-}
-
-void ToolsUnitTest::singleTextAndNameDelegatesPaintViewData()
-{
-    Latte::Settings::View::Delegate::SingleText singleTextDelegate(nullptr);
-    Latte::Settings::View::Delegate::NameDelegate nameDelegate(nullptr);
-    QStandardItemModel model(1, Latte::Settings::Model::Views::LASTCOLUMN);
-    const QModelIndex index = model.index(0, Latte::Settings::Model::Views::NAMECOLUMN);
-
-    Latte::Data::Screen screen;
-    screen.id = QStringLiteral("screen-one");
-    screen.name = QStringLiteral("Screen One");
-    screen.geometry = QRect(0, 0, 1920, 1080);
-    screen.isActive = true;
-
-    Latte::Data::View view(QStringLiteral("view-one"), QStringLiteral("View One"));
-    view.edge = Plasma::Types::BottomEdge;
-    view.alignment = Latte::Types::Center;
-
-    model.setData(index, QStringLiteral("View One"), Qt::DisplayRole);
-    model.setData(index, static_cast<int>(Qt::AlignLeft | Qt::AlignVCenter), Qt::TextAlignmentRole);
-    model.setData(index, true, Latte::Settings::Model::Views::ISACTIVEROLE);
-    model.setData(index, true, Latte::Settings::Model::Views::ISCHANGEDROLE);
-    model.setData(index, QVariant::fromValue(screen), Latte::Settings::Model::Views::SCREENROLE);
-    model.setData(index, QVariant::fromValue(view), Latte::Settings::Model::Views::VIEWROLE);
-
-    QStyleOptionViewItem option;
-    option.rect = QRect(0, 0, 180, 36);
-    option.state = QStyle::State_Enabled | QStyle::State_Selected;
-    QWidget widget;
-    option.widget = &widget;
-
-    QImage singleTextImage(option.rect.size(), QImage::Format_ARGB32_Premultiplied);
-    singleTextImage.fill(Qt::transparent);
-    QPainter singleTextPainter(&singleTextImage);
-    singleTextDelegate.paint(&singleTextPainter, option, index);
-    singleTextPainter.end();
-    QVERIFY(hasPaintedPixel(singleTextImage));
-
-    QImage nameImage(option.rect.size(), QImage::Format_ARGB32_Premultiplied);
-    nameImage.fill(Qt::transparent);
-    QPainter namePainter(&nameImage);
-    nameDelegate.paint(&namePainter, option, index);
-    namePainter.end();
-    QVERIFY(hasPaintedPixel(nameImage));
 }
 
 void ToolsUnitTest::styleStatePredicatesReflectOptionState()
@@ -657,6 +184,68 @@ void ToolsUnitTest::viewDrawingPaintsHorizontalAndVerticalEdges()
     Latte::drawView(&verticalPainter, option, verticalView, QRect(10, 10, 100, 50));
     verticalPainter.end();
     QVERIFY(hasPaintedPixel(verticalImage));
+}
+
+void ToolsUnitTest::horizontalDockScreenEdgeCornerPolicy()
+{
+    using Latte::ViewPart::horizontalDockTouchesLeftLengthEdge;
+    using Latte::ViewPart::horizontalDockTouchesRightLengthEdge;
+
+    QVERIFY(horizontalDockTouchesLeftLengthEdge(Latte::Types::Left, 0.5f, 0.0f));
+    QVERIFY(!horizontalDockTouchesRightLengthEdge(Latte::Types::Left, 0.5f, 0.0f));
+    QVERIFY(!horizontalDockTouchesLeftLengthEdge(Latte::Types::Right, 0.5f, 0.0f));
+    QVERIFY(horizontalDockTouchesRightLengthEdge(Latte::Types::Right, 0.5f, 0.0f));
+
+    QVERIFY(horizontalDockTouchesLeftLengthEdge(Latte::Types::Justify, 1.0f, 0.0f));
+    QVERIFY(horizontalDockTouchesRightLengthEdge(Latte::Types::Justify, 1.0f, 0.0f));
+
+    QVERIFY(!horizontalDockTouchesLeftLengthEdge(Latte::Types::Center, 0.5f, 0.0f));
+    QVERIFY(!horizontalDockTouchesRightLengthEdge(Latte::Types::Center, 0.5f, 0.0f));
+    QVERIFY(!horizontalDockTouchesLeftLengthEdge(Latte::Types::Left, 0.5f, 0.1f));
+    QVERIFY(!horizontalDockTouchesRightLengthEdge(Latte::Types::Right, 0.5f, 0.1f));
+    QVERIFY(!horizontalDockTouchesLeftLengthEdge(Latte::Types::Justify, 0.9f, 0.0f));
+    QVERIFY(!horizontalDockTouchesRightLengthEdge(Latte::Types::Justify, 0.9f, 0.0f));
+}
+
+void ToolsUnitTest::verticalDockExternalPanelAvoidancePolicy()
+{
+    using Latte::ViewPart::shouldRespectExternalPanelsForVerticalDock;
+    using Latte::ViewPart::verticalDockTouchesBottomLengthEdge;
+    using Latte::ViewPart::verticalDockTouchesTopLengthEdge;
+
+    QVERIFY(shouldRespectExternalPanelsForVerticalDock(Latte::Types::Top, 0.5f, 0.0f));
+    QVERIFY(shouldRespectExternalPanelsForVerticalDock(Latte::Types::Bottom, 0.5f, 0.0f));
+    QVERIFY(shouldRespectExternalPanelsForVerticalDock(Latte::Types::Justify, 1.0f, 0.0f));
+
+    QVERIFY(!shouldRespectExternalPanelsForVerticalDock(Latte::Types::Center, 0.5f, 0.0f));
+    QVERIFY(!shouldRespectExternalPanelsForVerticalDock(Latte::Types::Top, 0.5f, 0.1f));
+    QVERIFY(!shouldRespectExternalPanelsForVerticalDock(Latte::Types::Justify, 0.9f, 0.0f));
+
+    QVERIFY(verticalDockTouchesTopLengthEdge(Latte::Types::Top, 0.5f, 0.0f));
+    QVERIFY(!verticalDockTouchesBottomLengthEdge(Latte::Types::Top, 0.5f, 0.0f));
+    QVERIFY(!verticalDockTouchesTopLengthEdge(Latte::Types::Bottom, 0.5f, 0.0f));
+    QVERIFY(verticalDockTouchesBottomLengthEdge(Latte::Types::Bottom, 0.5f, 0.0f));
+    QVERIFY(verticalDockTouchesTopLengthEdge(Latte::Types::Justify, 1.0f, 0.0f));
+    QVERIFY(verticalDockTouchesBottomLengthEdge(Latte::Types::Justify, 1.0f, 0.0f));
+}
+
+void ToolsUnitTest::verticalDockExternalPanelGeometryKeepsScreenThicknessAxis()
+{
+    const QRect screenGeometry(0, 0, 1000, 800);
+
+    QCOMPARE(Latte::ViewPart::verticalDockExternalPanelGeometry(screenGeometry, QRect(90, 30, 910, 740)),
+             QRect(0, 30, 1000, 740));
+    QCOMPARE(Latte::ViewPart::verticalDockExternalPanelGeometry(screenGeometry, QRect(90, 0, 910, 800)),
+             screenGeometry);
+
+    const QList<QRect> panels{QRect(0, 0, 1000, 40), QRect(0, 0, 90, 800), QRect(0, 760, 1000, 40)};
+    QCOMPARE(Latte::ViewPart::verticalDockExternalPanelGeometry(screenGeometry, panels),
+             QRect(0, 40, 1000, 720));
+
+    const QRect topPanelGeometry = Latte::ViewPart::screenEdgePanelGeometry(screenGeometry, Plasma::Types::TopEdge, 36);
+    QCOMPARE(topPanelGeometry, QRect(0, 0, 1000, 36));
+    QCOMPARE(Latte::ViewPart::verticalDockExternalPanelGeometry(screenGeometry, QList<QRect>{topPanelGeometry}),
+             QRect(0, 36, 1000, 764));
 }
 
 QTEST_MAIN(ToolsUnitTest)
