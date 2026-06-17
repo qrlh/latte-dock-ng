@@ -86,9 +86,17 @@ Menu::Menu(QObject *parent, const QVariantList &args)
 Menu::~Menu()
 {
     //! sub-menus
-    m_addViewMenu->deleteLater();
-    m_switchLayoutsMenu->deleteLater();
-    m_moveToLayoutMenu->deleteLater();
+    if (m_addViewMenu) {
+        m_addViewMenu->deleteLater();
+    }
+
+    if (m_switchLayoutsMenu) {
+        m_switchLayoutsMenu->deleteLater();
+    }
+
+    if (m_moveToLayoutMenu) {
+        m_moveToLayoutMenu->deleteLater();
+    }
 
     //! clear menu actions that have been created from submenus
     m_actions.remove(Latte::Data::ContextMenu::ADDVIEWACTION);

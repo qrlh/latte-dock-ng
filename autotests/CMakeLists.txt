@@ -771,3 +771,59 @@ target_link_libraries(taskspluginunittest
 
 add_test(NAME taskspluginunittest COMMAND taskspluginunittest)
 
+
+set(containmentactionmenuunittest_SRCS
+    containmentactionmenuunittest.cpp
+    ../containmentactions/contextmenu/menu.cpp
+    ../containmentactions/contextmenu/layoutmenuitemwidget.cpp
+    ../app/settings/generic/generictools.cpp
+)
+
+add_executable(containmentactionmenuunittest EXCLUDE_FROM_ALL ${containmentactionmenuunittest_SRCS})
+
+target_include_directories(containmentactionmenuunittest PRIVATE
+    ${CMAKE_BINARY_DIR}/app
+    ${CMAKE_CURRENT_SOURCE_DIR}/../app
+    ${CMAKE_CURRENT_SOURCE_DIR}/../app/data
+    ${CMAKE_CURRENT_SOURCE_DIR}/../app/settings/generic
+    ${CMAKE_CURRENT_SOURCE_DIR}/../containmentactions/contextmenu
+)
+
+target_link_libraries(containmentactionmenuunittest
+    Qt6::Core
+    Qt6::DBus
+    Qt6::Gui
+    Qt6::Test
+    Qt6::Widgets
+    KF6::I18n
+    KF6::XmlGui
+    Plasma::Plasma
+)
+
+add_test(NAME containmentactionmenuunittest COMMAND containmentactionmenuunittest)
+set_tests_properties(containmentactionmenuunittest PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+
+set(settingsviewunittest_SRCS
+    settingsviewunittest.cpp
+    ../app/settings/settingsdialog/layoutstableview.cpp
+    ../app/settings/viewsdialog/viewstableview.cpp
+)
+
+add_executable(settingsviewunittest EXCLUDE_FROM_ALL ${settingsviewunittest_SRCS})
+
+target_include_directories(settingsviewunittest PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../app/settings/settingsdialog
+    ${CMAKE_CURRENT_SOURCE_DIR}/../app/settings/viewsdialog
+)
+
+target_link_libraries(settingsviewunittest
+    Qt6::Core
+    Qt6::Gui
+    Qt6::Test
+    Qt6::Widgets
+    KF6::I18n
+)
+
+add_test(NAME settingsviewunittest COMMAND settingsviewunittest)
+set_tests_properties(settingsviewunittest PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
