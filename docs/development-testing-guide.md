@@ -60,6 +60,15 @@ For QML and plugin behavior, prefer smoke tests that load the built plugin or pa
 
 If a test exposes a production bug, keep the regression test and make the smallest fix needed to satisfy the documented behavior.
 
+## Architecture Debt Tracked Deliberately
+
+Some Plasma 6 compatibility work is intentionally conservative because broad cleanup can regress user-visible shell behavior:
+
+- `app/knscompat.cpp` still creates user-local QML overrides for the KNS dialog, but the source QML root must be resolved explicitly and the override can be disabled with `LATTE_DISABLE_KNS_COMPAT=1` for diagnosis.
+- QML smoke tests may use source-level regression locks when a behavior depends on a live Plasma shell, KWin, or third-party applet. Prefer real `QQmlComponent` tests when practical, but keep source locks for previously fixed regressions that are hard to exercise headlessly.
+- Broad QML import modernization should be done only in touched files. Do not churn all `QtQuick 2.x` imports in one pass.
+- Private Plasma imports and `Latte::Corona` shutdown ordering are known maintenance risks. Change them only with focused runtime reproduction and GCC/Clang test coverage.
+
 ## Coverage Estimate
 
 The project currently tracks a coarse file-level coverage estimate: count production `.cpp` files referenced by autotest targets, plus runtime smoke targets that load production plugin entry points, then divide by all tracked production `.cpp` files.

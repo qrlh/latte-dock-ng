@@ -69,8 +69,11 @@ void QmlSmokeTest::pulseAudioBootstrapIsBounded()
     QFile pulseAudio(QStringLiteral(LATTE_SOURCE_DIR "/plasmoid/package/contents/ui/PulseAudio.qml"));
     QVERIFY(pulseAudio.open(QFile::ReadOnly));
 
+    // Regression lock: the PulseAudio refresh must be a bounded startup
+    // bootstrap, not a long-running periodic fix timer.
     const QString source = QString::fromUtf8(pulseAudio.readAll());
     QVERIFY(source.contains(QStringLiteral("bootstrapAttempts")));
+    QVERIFY(source.contains(QStringLiteral("bootstrapMaxAttempts")));
     QVERIFY(source.contains(QStringLiteral("paFixTimer.stop()")));
     QVERIFY(!source.contains(QStringLiteral("interval = 30000")));
 }
@@ -80,10 +83,14 @@ void QmlSmokeTest::compactAppletUsesLargerDefaultForVolumePopup()
     QFile compactApplet(QStringLiteral(LATTE_SOURCE_DIR "/shell/package/contents/applet/CompactApplet.qml"));
     QVERIFY(compactApplet.open(QFile::ReadOnly));
 
+    // Regression lock: the Plasma volume applet needs Latte's wrapper to keep
+    // a Plasma-panel-like initial popup size instead of reusing stale tiny
+    // persisted popup dimensions.
     const QString source = QString::fromUtf8(compactApplet.readAll());
     QVERIFY(source.contains(QStringLiteral("function popupPreferredWidth")));
     QVERIFY(source.contains(QStringLiteral("function popupPreferredHeight")));
     QVERIFY(source.contains(QStringLiteral("org.kde.plasma.volume")));
+    QVERIFY(source.contains(QStringLiteral("Kirigami.Units.gridUnit * 27")));
 }
 
 void QmlSmokeTest::compactAppletKeepsApplicationMenuPopupResizable()
@@ -91,6 +98,9 @@ void QmlSmokeTest::compactAppletKeepsApplicationMenuPopupResizable()
     QFile compactApplet(QStringLiteral(LATTE_SOURCE_DIR "/shell/package/contents/applet/CompactApplet.qml"));
     QVERIFY(compactApplet.open(QFile::ReadOnly));
 
+    // Regression lock: application menu popups should keep their preferred
+    // initial size while advertising a smaller minimum and unbounded maximum
+    // so the user can resize both width and height.
     const QString source = QString::fromUtf8(compactApplet.readAll());
     QVERIFY(source.contains(QStringLiteral("function popupMenuMinimumWidth")));
     QVERIFY(source.contains(QStringLiteral("function popupMenuMinimumHeight")));
@@ -98,6 +108,7 @@ void QmlSmokeTest::compactAppletKeepsApplicationMenuPopupResizable()
     QVERIFY(source.contains(QStringLiteral("function popupMaximumHeight")));
     QVERIFY(source.contains(QStringLiteral("org.kde.plasma.kicker")));
     QVERIFY(source.contains(QStringLiteral("isApplicationMenuApplet()")));
+    QVERIFY(source.contains(QStringLiteral("Kirigami.Units.gridUnit * 18")));
     QVERIFY(source.contains(QStringLiteral("return Infinity;")));
 }
 
