@@ -19,6 +19,8 @@ The current suite covers:
 - scheme color parsing
 - window-system helper logic
 - selected settings delegates and widgets
+- source-level UI/runtime regression contracts
+- install, uninstall, Docker, and packaging contracts
 
 Test executables are intentionally marked `EXCLUDE_FROM_ALL` so normal application builds are not slowed by test-only targets.
 
@@ -29,16 +31,18 @@ Both GCC and Clang builds must remain error-free. Use separate build directories
 ```bash
 cmake -S . -B build-autotests-gcc -DBUILD_TESTING=ON
 cmake --build build-autotests-gcc --target \
-  dataunittest modelunittest coreunittest qmlsmoketest typesunittest \
-  taskpluginunittest packageunittest indicatorunittest layoutunittest \
-  schemecolorsunittest wmunittest toolsunittest --parallel 8
+  dataunittest modelunittest coreunittest qmlsmoketest sourcecontracttest \
+  packagingcontracttest typesunittest taskpluginunittest packageunittest \
+  indicatorunittest layoutunittest schemecolorsunittest wmunittest \
+  toolsunittest --parallel 8
 ctest --test-dir build-autotests-gcc --output-on-failure
 
 CC=clang CXX=clang++ cmake -S . -B build-autotests-clang -DBUILD_TESTING=ON
 cmake --build build-autotests-clang --target \
-  dataunittest modelunittest coreunittest qmlsmoketest typesunittest \
-  taskpluginunittest packageunittest indicatorunittest layoutunittest \
-  schemecolorsunittest wmunittest toolsunittest --parallel 8
+  dataunittest modelunittest coreunittest qmlsmoketest sourcecontracttest \
+  packagingcontracttest typesunittest taskpluginunittest packageunittest \
+  indicatorunittest layoutunittest schemecolorsunittest wmunittest \
+  toolsunittest --parallel 8
 ctest --test-dir build-autotests-clang --output-on-failure
 ```
 

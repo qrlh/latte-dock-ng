@@ -193,6 +193,42 @@ target_link_libraries(qmlsmoketest
 add_test(NAME qmlsmoketest COMMAND qmlsmoketest)
 set_tests_properties(qmlsmoketest PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
+set(sourcecontracttest_SRCS
+    sourcecontracttest.cpp
+)
+
+add_executable(sourcecontracttest EXCLUDE_FROM_ALL ${sourcecontracttest_SRCS})
+
+target_compile_definitions(sourcecontracttest PRIVATE
+    LATTE_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+)
+
+target_link_libraries(sourcecontracttest
+    Qt6::Core
+    Qt6::Test
+)
+
+add_test(NAME sourcecontracttest COMMAND sourcecontracttest)
+set_tests_properties(sourcecontracttest PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+set(packagingcontracttest_SRCS
+    packagingcontracttest.cpp
+)
+
+add_executable(packagingcontracttest EXCLUDE_FROM_ALL ${packagingcontracttest_SRCS})
+
+target_compile_definitions(packagingcontracttest PRIVATE
+    LATTE_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+)
+
+target_link_libraries(packagingcontracttest
+    Qt6::Core
+    Qt6::Test
+)
+
+add_test(NAME packagingcontracttest COMMAND packagingcontracttest)
+set_tests_properties(packagingcontracttest PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
 set(typesunittest_SRCS
     typesunittest.cpp
     ../containment/plugin/types.cpp
