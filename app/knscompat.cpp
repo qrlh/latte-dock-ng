@@ -14,7 +14,7 @@
 #include <QStandardPaths>
 #include <QTextStream>
 
-static constexpr int kCompatVersion = 7;
+static constexpr int kCompatVersion = 8;
 
 //! Patched DrawerHandle.qml — Qt 6.10 removed DragHandler.xAxis.onActiveValueChanged.
 //! Use DragHandler.onActiveTranslationChanged instead.
@@ -127,7 +127,7 @@ Item {
         if (!root.drawerReady) return 0;
         switch (drawer.edge) {
         case Qt.LeftEdge:  return (drawer.background?.width ?? 0) * drawer.position + Kirigami.Units.smallSpacing;
-        case Qt.RightEdge: return parent.width - ((drawer.background?.width ?? 0) * drawer.position) - width - Kirigami.Units.smallSpacing;
+        case Qt.RightEdge: return (parent?.width ?? 0) - ((drawer.background?.width ?? 0) * drawer.position) - width - Kirigami.Units.smallSpacing;
         default:           return 0;
         }
     }
@@ -141,7 +141,7 @@ Item {
     }
 
     anchors {
-        bottom: handleAnchor ? undefined : parent.bottom
+        bottom: handleAnchor || !parent ? undefined : parent.bottom
         bottomMargin: {
             if (typeof applicationWindow === "undefined") return undefined;
             const window = applicationWindow();
@@ -315,6 +315,17 @@ static QString userLocalQmlBase(const QString &systemQmlBase)
     return userLocalPrefix + QStringLiteral("/lib64/qt6/qml");
 }
 
+QString knsCompatUserQmlRoot()
+{
+    const QString systemQmlBase = resolvedSystemQmlBase();
+
+    if (systemQmlBase.isEmpty()) {
+        return QString();
+    }
+
+    return userLocalQmlBase(systemQmlBase);
+}
+
 static bool writeIfChanged(const QString &path, const QString &content)
 {
     if (QFileInfo(path).isSymLink()) {
@@ -410,7 +421,7 @@ Item {
         if (!drawer) return 0;
         switch (drawer.edge) {
         case Qt.LeftEdge:  return (drawer.background?.width ?? 0) * drawer.position + Kirigami.Units.smallSpacing;
-        case Qt.RightEdge: return parent.width - ((drawer.background?.width ?? 0) * drawer.position) - width - Kirigami.Units.smallSpacing;
+        case Qt.RightEdge: return (parent?.width ?? 0) - ((drawer.background?.width ?? 0) * drawer.position) - width - Kirigami.Units.smallSpacing;
         default:           return 0;
         }
     }

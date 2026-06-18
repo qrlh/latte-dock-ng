@@ -138,7 +138,7 @@ void KnsCompatUnitTest::latestStampStillRepairsMissingControlsOverride()
     QVERIFY(QDir().mkpath(stampDir));
     QFile stamp(stampDir + QStringLiteral("/kns-compat.stamp"));
     QVERIFY(stamp.open(QFile::WriteOnly | QFile::Truncate));
-    QCOMPARE(stamp.write("7"), qint64(1));
+    QCOMPARE(stamp.write("8"), qint64(1));
     stamp.close();
 
     const QString root = qmlRoot();
@@ -176,12 +176,15 @@ void KnsCompatUnitTest::firstRunWritesPatchedOverridesAndStamp()
     QVERIFY(drawer.open(QFile::ReadOnly));
     const QByteArray drawerText = drawer.readAll();
     QVERIFY(drawerText.contains("onActiveTranslationChanged"));
+    QVERIFY(drawerText.contains("parent?.width ?? 0"));
+    QVERIFY(drawerText.contains("handleAnchor || !parent ? undefined : parent.bottom"));
     QVERIFY(!QFileInfo(drawer).isSymLink());
 
     QFile handle(root + QStringLiteral("/org/kde/kirigami/controls/private/globaltoolbar/HandleButton.qml"));
     QVERIFY(handle.open(QFile::ReadOnly));
     const QByteArray handleText = handle.readAll();
     QVERIFY(handleText.contains("onActiveTranslationChanged"));
+    QVERIFY(handleText.contains("parent?.width ?? 0"));
     QVERIFY(!QFileInfo(handle).isSymLink());
 
     QFile controlsQmldir(root + QStringLiteral("/org/kde/kirigami/controls/qmldir"));
@@ -191,7 +194,7 @@ void KnsCompatUnitTest::firstRunWritesPatchedOverridesAndStamp()
     QFile stamp(QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)
                 + QStringLiteral("/latte-dock-ng/kns-compat.stamp"));
     QVERIFY(stamp.open(QFile::ReadOnly));
-    QCOMPARE(stamp.readAll().trimmed(), QByteArray("7"));
+    QCOMPARE(stamp.readAll().trimmed(), QByteArray("8"));
 }
 
 void KnsCompatUnitTest::optOutDoesNotWriteOverrides()

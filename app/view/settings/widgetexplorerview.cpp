@@ -12,8 +12,10 @@
 #include "../../wm/abstractwindowinterface.h"
 
 // Qt
+#include <QProcess>
 #include <QQuickItem>
 #include <QScreen>
+#include <QStandardPaths>
 
 // KDE
 #include <KWindowEffects>
@@ -73,6 +75,18 @@ void WidgetExplorerView::setHideOnWindowDeactivate(bool hide)
 
     m_hideOnWindowDeactivate = hide;
     Q_EMIT hideOnWindowDeactivateChanged();
+}
+
+bool WidgetExplorerView::openGetNewWidgetsDialog()
+{
+    const QString executable = QStandardPaths::findExecutable(QStringLiteral("knewstuff-dialog6"));
+
+    if (executable.isEmpty()) {
+        qWarning() << "WidgetExplorerView: knewstuff-dialog6 executable was not found";
+        return false;
+    }
+
+    return QProcess::startDetached(executable, {QStringLiteral("plasmoids.knsrc")});
 }
 
 Qt::WindowFlags WidgetExplorerView::wFlags() const

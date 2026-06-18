@@ -56,6 +56,7 @@ public:
 
 public Q_SLOTS:
     Q_INVOKABLE void hideConfigWindow();
+    Q_INVOKABLE bool openGetNewWidgetsDialog();
     Q_INVOKABLE void syncGeometry() override;
     Q_INVOKABLE void updateEffects();
 

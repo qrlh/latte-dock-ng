@@ -49,7 +49,9 @@ PC3.Page {
     //therefore get deleted whilst we are still in a drag exec()
     //this is a clue to the owning dialog that hideOnWindowDeactivate should be deleted
     //See https://bugs.kde.org/show_bug.cgi?id=332733
-    property bool preventWindowHide: draggingWidget || categoriesDialog.status !== PlasmaExtras.Menu.Closed
+    property bool getNewWidgetsDialogActive: false
+    property bool preventWindowHide: draggingWidget || getNewWidgetsDialogActive
+                                  || categoriesDialog.status !== PlasmaExtras.Menu.Closed
                                   || getWidgetsDialog.status !== PlasmaExtras.Menu.Closed
 
     property bool outputOnly: draggingWidget
@@ -62,6 +64,12 @@ PC3.Page {
     property int runningCountRevision: 0
 
     signal closed();
+
+    function forceClose() {
+        getNewWidgetsWindowHideRestoreTimer.stop()
+        getNewWidgetsDialogActive = false
+        viewConfig.hideConfigWindow()
+    }
 
     onClosed: {
         if (main.preventWindowHide) {
@@ -158,6 +166,21 @@ PC3.Page {
         return count;
     }
 
+    function shouldOpenExternalGetNewWidgetsDialog(actionModel) {
+        var label = "";
+
+        if (actionModel) {
+            label = String(actionModel.display || actionModel.text || actionModel.name || "");
+        }
+
+        return label.indexOf("Get New") !== -1
+            || label.indexOf("Add New") !== -1
+            || label.indexOf("Download New") !== -1
+            || label.indexOf("添加新") !== -1
+            || label.indexOf("获取新") !== -1
+            || label.indexOf("下载新") !== -1;
+    }
+
     function scheduleRunningCountRefresh() {
         runningCountRevision++;
         runningCountRefreshTimer.remainingRuns = 20;
@@ -217,6 +240,13 @@ PC3.Page {
         onTriggered: addCurrentApplet()
     }
 
+    Timer {
+        id: getNewWidgetsWindowHideRestoreTimer
+        interval: 30000
+        repeat: false
+        onTriggered: main.getNewWidgetsDialogActive = false
+    }
+
     KSvg.FrameSvgItem{
         id: backgroundFrameSvgItem
         anchors.top: parent.top
@@ -248,6 +278,23 @@ PC3.Page {
     }
 
     PlasmaExtras.ModelContextMenu {
+        id: getWidgetsDialog
+        visualParent: getWidgetsButton
+        // model set on first invocation
+
+        onClicked: function(model) {
+            if (main.shouldOpenExternalGetNewWidgetsDialog(model)) {
+                main.getNewWidgetsDialogActive = true
+                getNewWidgetsWindowHideRestoreTimer.restart()
+                viewConfig.openGetNewWidgetsDialog()
+                return
+            }
+
+            model.trigger()
+        }
+    }
+
+    PlasmaExtras.ModelContextMenu {
         id: categoriesDialog
         visualParent: categoryButton
         // model set on first invocation
@@ -263,12 +310,6 @@ PC3.Page {
         }
     }
 
-    PlasmaExtras.ModelContextMenu {
-        id: getWidgetsDialog
-        visualParent: getWidgetsButton
-        // model set on first invocation
-        onClicked: model.trigger()
-    }
     /*
     PlasmaCore.Dialog {
         id: tooltipDialog
@@ -349,7 +390,7 @@ PC3.Page {
                         ? Kirigami.Theme.Complementary
                         : Kirigami.Theme.Button
                     Kirigami.Theme.inherit: false
-                    onClicked: main.closed()
+                    onClicked: main.forceClose()
                 }
             }
 

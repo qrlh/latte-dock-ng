@@ -6,6 +6,8 @@
 #ifndef KNSCOMPAT_H
 #define KNSCOMPAT_H
 
+#include <QString>
+
 //! Set up user-local QML module overrides to fix the KNS download dialog.
 //! Qt 6.10.3 removed DragHandler.xAxis.onActiveValueChanged, which breaks
 //! Kirigami's DrawerHandle.qml.  The system qmldir files use `prefer` to
@@ -14,5 +16,9 @@
 //! KNSWidgets::Dialog (opened by "Download New Plasma Widgets") renders
 //! correctly, matching the official Plasma panel behavior.
 void ensureKnsCompat();
+
+//! Returns the user-local QML import root used by ensureKnsCompat(), or an
+//! empty string when no complete system QML root can be found.
+QString knsCompatUserQmlRoot();
 
 #endif // KNSCOMPAT_H

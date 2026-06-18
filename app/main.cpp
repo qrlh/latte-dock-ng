@@ -63,6 +63,7 @@ inline void detectPlatform(int argc, char **argv);
 inline void filterDebugMessageOutput(QtMsgType type, const QMessageLogContext &context, const QString &msg);
 inline bool shouldUseUserLocalQmlImports(int argc, char **argv);
 inline void ensureUserLocalQmlImportPaths(int argc, char **argv);
+inline void ensureKnsCompatQmlImportPaths();
 inline void ensureKdeSessionEnvironment();
 inline bool isKdeSessionShuttingDown();
 inline void autoClearQmlCacheOnVersionChange();
@@ -114,6 +115,13 @@ int main(int argc, char **argv)
     // where the QML engine loads old compiled files from ~/.cache/lattedock/qmlcache.
     autoClearQmlCacheOnVersionChange();
 
+    //! Set up user-local QML module overrides so the KNS download dialog
+    //! (opened by "Download New Plasma Widgets") renders correctly.  This
+    //! works around the Qt 6.10.3 incompatibility in Kirigami's
+    //! DrawerHandle.qml without modifying system files.
+    ensureKnsCompat();
+    ensureKnsCompatQmlImportPaths();
+
     //! Prime the Plasma global shared QML engine singleton early.
     //! plasmashell creates a process-wide shared QQmlEngine via
     //! SharedQmlEnginePrivate::engine() (a static weak_ptr).  When
@@ -123,12 +131,6 @@ int main(int argc, char **argv)
     //! DrawerHandle.qml path from libKirigamiTemplates.so.
     static std::shared_ptr<PlasmaQuick::SharedQmlEngine> s_sharedEngine =
         std::make_shared<PlasmaQuick::SharedQmlEngine>(&app);
-
-    //! Set up user-local QML module overrides so the KNS download dialog
-    //! (opened by "Download New Plasma Widgets") renders correctly.  This
-    //! works around the Qt 6.10.3 incompatibility in Kirigami's
-    //! DrawerHandle.qml without modifying system files.
-    ensureKnsCompat();
 
     app.setWindowIcon(QIcon::fromTheme(QString::fromLatin1(Latte::App::ICONNAME)));
     //protect from closing app when changing to "alternative session" and back
@@ -712,6 +714,26 @@ inline void ensureUserLocalQmlImportPaths(int argc, char **argv)
 
         prependEnvironmentPath("QT_PLUGIN_PATH", candidate);
     }
+}
+
+inline void ensureKnsCompatQmlImportPaths()
+{
+    const QString qmlRoot = knsCompatUserQmlRoot();
+
+    if (qmlRoot.isEmpty()) {
+        return;
+    }
+
+    const QFileInfo info(qmlRoot);
+
+    if (!info.exists() || !info.isDir()) {
+        return;
+    }
+
+    prependEnvironmentPath("QML2_IMPORT_PATH", qmlRoot);
+    prependEnvironmentPath("QML_IMPORT_PATH", qmlRoot);
+    prependEnvironmentPath("QT_QML_IMPORT_PATH", qmlRoot);
+    qDebug() << "KnsCompat: QML import root enabled" << qmlRoot;
 }
 
 inline void configureQtQuickGraphicsPreference()

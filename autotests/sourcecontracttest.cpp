@@ -38,6 +38,8 @@ private Q_SLOTS:
     void cmakeWarningRelaxationLivesInModule();
     void cmakeFindsQtCoreToolsBeforeKdeInstallDirs();
     void qtQuickGpuPreferenceKeepsSoftwareFallbackAvailable();
+    void knsCompatImportsAreAvailableForSystemInstall();
+    void widgetExplorerLaunchesKnsDialogOutOfProcess();
 };
 
 void SourceContractTest::plasmaVolumeBootstrapContractMovedToQmlSmokeTest()
@@ -225,6 +227,80 @@ void SourceContractTest::qtQuickGpuPreferenceKeepsSoftwareFallbackAvailable()
     QVERIFY(viewSource.contains(QStringLiteral("graphicsApi()")));
     QVERIFY(viewSource.contains(QStringLiteral("Latte Dock actual Qt Quick scene graph graphics API")));
     QVERIFY(viewSource.contains(QStringLiteral("GPU accelerated")));
+}
+
+void SourceContractTest::knsCompatImportsAreAvailableForSystemInstall()
+{
+    QFile mainSourceFile(QStringLiteral(LATTE_SOURCE_DIR "/app/main.cpp"));
+    QVERIFY(mainSourceFile.open(QFile::ReadOnly));
+    const QString mainSource = QString::fromUtf8(mainSourceFile.readAll());
+
+    QVERIFY(mainSource.contains(QStringLiteral("inline void ensureKnsCompatQmlImportPaths();")));
+    QVERIFY(mainSource.contains(QStringLiteral("void ensureKnsCompatQmlImportPaths()")));
+    QVERIFY(mainSource.contains(QStringLiteral("knsCompatUserQmlRoot()")));
+    QVERIFY(mainSource.contains(QStringLiteral("prependEnvironmentPath(\"QML2_IMPORT_PATH\"")));
+    QVERIFY(mainSource.contains(QStringLiteral("prependEnvironmentPath(\"QML_IMPORT_PATH\"")));
+    QVERIFY(mainSource.contains(QStringLiteral("prependEnvironmentPath(\"QT_QML_IMPORT_PATH\"")));
+
+    const int appCreation = mainSource.indexOf(QStringLiteral("QApplication app(argc, argv);"));
+    QVERIFY(appCreation >= 0);
+    const int ensureCompatCall = mainSource.indexOf(QStringLiteral("ensureKnsCompat();"), appCreation);
+    const int ensureImportPathCall = mainSource.indexOf(QStringLiteral("ensureKnsCompatQmlImportPaths();"), appCreation);
+    const int sharedEngineCreation = mainSource.indexOf(QStringLiteral("std::make_shared<PlasmaQuick::SharedQmlEngine>(&app);"), appCreation);
+    QVERIFY(ensureCompatCall > appCreation);
+    QVERIFY(ensureImportPathCall > ensureCompatCall);
+    QVERIFY(sharedEngineCreation > ensureImportPathCall);
+
+    QFile compatHeader(QStringLiteral(LATTE_SOURCE_DIR "/app/knscompat.h"));
+    QVERIFY(compatHeader.open(QFile::ReadOnly));
+    const QString compatHeaderSource = QString::fromUtf8(compatHeader.readAll());
+    QVERIFY(compatHeaderSource.contains(QStringLiteral("QString knsCompatUserQmlRoot();")));
+}
+
+void SourceContractTest::widgetExplorerLaunchesKnsDialogOutOfProcess()
+{
+    QFile widgetExplorer(QStringLiteral(LATTE_SOURCE_DIR "/shell/package/contents/views/WidgetExplorer.qml"));
+    QVERIFY(widgetExplorer.open(QFile::ReadOnly));
+    const QString source = QString::fromUtf8(widgetExplorer.readAll());
+
+    QVERIFY(source.contains(QStringLiteral("function shouldOpenExternalGetNewWidgetsDialog(actionModel)")));
+    QVERIFY(source.contains(QStringLiteral("property bool getNewWidgetsDialogActive: false")));
+    QVERIFY(source.contains(QStringLiteral("property bool preventWindowHide: draggingWidget || getNewWidgetsDialogActive")));
+    QVERIFY(source.contains(QStringLiteral("|| getWidgetsDialog.status !== PlasmaExtras.Menu.Closed")));
+    QVERIFY(source.contains(QStringLiteral("id: getNewWidgetsWindowHideRestoreTimer")));
+    QVERIFY(source.contains(QStringLiteral("main.getNewWidgetsDialogActive = false")));
+    QVERIFY(source.contains(QStringLiteral("label.indexOf(\"添加新\") !== -1")));
+    QVERIFY(source.contains(QStringLiteral("function forceClose()")));
+    QVERIFY(source.contains(QStringLiteral("getNewWidgetsWindowHideRestoreTimer.stop()")));
+    QVERIFY(source.contains(QStringLiteral("viewConfig.hideConfigWindow()")));
+    QVERIFY(source.contains(QStringLiteral("onClicked: main.forceClose()")));
+    QVERIFY(source.contains(QStringLiteral("id: getWidgetsDialog")));
+    QVERIFY(source.contains(QStringLiteral("getWidgetsDialog.model = widgetExplorer.widgetsMenuActions")));
+    QVERIFY(source.contains(QStringLiteral("getWidgetsDialog.open(0, getWidgetsButton.height)")));
+    QVERIFY(source.contains(QStringLiteral("main.getNewWidgetsDialogActive = true")));
+    QVERIFY(source.contains(QStringLiteral("getNewWidgetsWindowHideRestoreTimer.restart()")));
+    QVERIFY(source.contains(QStringLiteral("viewConfig.openGetNewWidgetsDialog()")));
+    QVERIFY(source.contains(QStringLiteral("model.trigger()")));
+
+    const int getWidgetsMenu = source.indexOf(QStringLiteral("id: getWidgetsDialog"));
+    QVERIFY(getWidgetsMenu >= 0);
+    const int externalDialogCall = source.indexOf(QStringLiteral("viewConfig.openGetNewWidgetsDialog()"), getWidgetsMenu);
+    const int fallbackTrigger = source.indexOf(QStringLiteral("model.trigger()"), getWidgetsMenu);
+    QVERIFY(externalDialogCall > getWidgetsMenu);
+    QVERIFY(fallbackTrigger > externalDialogCall);
+
+    QFile widgetExplorerHeader(QStringLiteral(LATTE_SOURCE_DIR "/app/view/settings/widgetexplorerview.h"));
+    QVERIFY(widgetExplorerHeader.open(QFile::ReadOnly));
+    const QString headerSource = QString::fromUtf8(widgetExplorerHeader.readAll());
+    QVERIFY(headerSource.contains(QStringLiteral("Q_INVOKABLE bool openGetNewWidgetsDialog();")));
+
+    QFile widgetExplorerCpp(QStringLiteral(LATTE_SOURCE_DIR "/app/view/settings/widgetexplorerview.cpp"));
+    QVERIFY(widgetExplorerCpp.open(QFile::ReadOnly));
+    const QString cppSource = QString::fromUtf8(widgetExplorerCpp.readAll());
+    QVERIFY(cppSource.contains(QStringLiteral("#include <QProcess>")));
+    QVERIFY(cppSource.contains(QStringLiteral("#include <QStandardPaths>")));
+    QVERIFY(cppSource.contains(QStringLiteral("QStandardPaths::findExecutable(QStringLiteral(\"knewstuff-dialog6\"))")));
+    QVERIFY(cppSource.contains(QStringLiteral("QProcess::startDetached(executable, {QStringLiteral(\"plasmoids.knsrc\")})")));
 }
 
 void SourceContractTest::itemsAlignmentIsSeparateAndJustifyOnly()
