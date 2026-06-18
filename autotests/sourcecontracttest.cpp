@@ -29,6 +29,7 @@ private Q_SLOTS:
     void layoutDetailsExposeCustomColorSchemeSelector();
     void autotestAggregateTargetDocumentsFullSuiteBuild();
     void coverageEstimateUsesReusableScript();
+    void cmakeTargetResolutionUsesSharedHelpers();
 };
 
 void SourceContractTest::pulseAudioBootstrapIsBounded()
@@ -402,6 +403,20 @@ void SourceContractTest::coverageEstimateUsesReusableScript()
     const QString guideSource = QString::fromUtf8(testingGuide.readAll());
     QVERIFY(guideSource.contains(QStringLiteral("python3 autotests/coverageestimate.py")));
     QVERIFY(!guideSource.contains(QStringLiteral("python3 - <<'PY'")));
+}
+
+void SourceContractTest::cmakeTargetResolutionUsesSharedHelpers()
+{
+    QFile cmake(QStringLiteral(LATTE_SOURCE_DIR "/CMakeLists.txt"));
+    QVERIFY(cmake.open(QFile::ReadOnly));
+    const QString cmakeSource = QString::fromUtf8(cmake.readAll());
+
+    QVERIFY(cmakeSource.contains(QStringLiteral("function(latte_resolve_target_from_candidates")));
+    QVERIFY(cmakeSource.contains(QStringLiteral("function(latte_resolve_library_variable")));
+    QVERIFY(cmakeSource.contains(QStringLiteral("latte_resolve_target_from_candidates(LATTE_NEWSTUFF_TARGET")));
+    QVERIFY(cmakeSource.contains(QStringLiteral("latte_resolve_library_variable(LATTE_NEWSTUFF_TARGET")));
+    QVERIFY(cmakeSource.contains(QStringLiteral("latte_resolve_target_from_candidates(LATTE_WAYLANDCLIENT_TARGET")));
+    QVERIFY(cmakeSource.contains(QStringLiteral("latte_resolve_library_variable(LATTE_WAYLANDCLIENT_TARGET")));
 }
 
 QTEST_MAIN(SourceContractTest)
