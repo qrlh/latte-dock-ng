@@ -32,6 +32,7 @@ private Q_SLOTS:
     void cmakeTargetResolutionUsesSharedHelpers();
     void cmakeImportedTargetResolutionUsesSharedHelper();
     void cmakeTargetResolutionHelpersLiveInModule();
+    void cmakeOffscreenTestsUseSharedHelper();
 };
 
 void SourceContractTest::pulseAudioBootstrapIsBounded()
@@ -459,6 +460,22 @@ void SourceContractTest::cmakeTargetResolutionHelpersLiveInModule()
     QVERIFY(!cmakeSource.contains(QStringLiteral("function(latte_resolve_target_from_candidates")));
     QVERIFY(!cmakeSource.contains(QStringLiteral("function(latte_resolve_library_variable")));
     QVERIFY(!cmakeSource.contains(QStringLiteral("function(latte_resolve_imported_target")));
+}
+
+void SourceContractTest::cmakeOffscreenTestsUseSharedHelper()
+{
+    QFile autotestsCMake(QStringLiteral(LATTE_SOURCE_DIR "/autotests/CMakeLists.txt"));
+    QVERIFY(autotestsCMake.open(QFile::ReadOnly));
+    const QString cmakeSource = QString::fromUtf8(autotestsCMake.readAll());
+
+    QVERIFY(cmakeSource.contains(QStringLiteral("function(latte_add_offscreen_test")));
+    QVERIFY(cmakeSource.contains(QStringLiteral("set_tests_properties(${_test_name} PROPERTIES ENVIRONMENT \"QT_QPA_PLATFORM=offscreen\")")));
+    QVERIFY(cmakeSource.contains(QStringLiteral("latte_add_offscreen_test(coreunittest)")));
+    QVERIFY(cmakeSource.contains(QStringLiteral("latte_add_offscreen_test(qmlsmoketest)")));
+    QVERIFY(cmakeSource.contains(QStringLiteral("latte_add_offscreen_test(sourcecontracttest)")));
+    QVERIFY(cmakeSource.contains(QStringLiteral("latte_add_offscreen_test(containmentactionmenuunittest)")));
+    QVERIFY(!cmakeSource.contains(QStringLiteral("set_tests_properties(coreunittest PROPERTIES ENVIRONMENT \"QT_QPA_PLATFORM=offscreen\")")));
+    QVERIFY(!cmakeSource.contains(QStringLiteral("set_tests_properties(settingsviewunittest PROPERTIES ENVIRONMENT \"QT_QPA_PLATFORM=offscreen\")")));
 }
 
 QTEST_MAIN(SourceContractTest)

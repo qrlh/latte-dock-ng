@@ -1,3 +1,8 @@
+function(latte_add_offscreen_test _test_name)
+    add_test(NAME ${_test_name} COMMAND ${_test_name})
+    set_tests_properties(${_test_name} PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endfunction()
+
 set(dataunittest_SRCS
     dataunittest.cpp
     ../app/data/activitydata.cpp
@@ -104,8 +109,7 @@ target_link_libraries(coreunittest
     Plasma::Plasma
 )
 
-add_test(NAME coreunittest COMMAND coreunittest)
-set_tests_properties(coreunittest PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+latte_add_offscreen_test(coreunittest)
 
 set(corecomponentstest_SRCS
     corecomponentstest.cpp
@@ -167,8 +171,7 @@ target_link_libraries(corecomponentstest
     Wayland::Client
 )
 
-add_test(NAME corecomponentstest COMMAND corecomponentstest)
-set_tests_properties(corecomponentstest PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+latte_add_offscreen_test(corecomponentstest)
 
 set(qmlsmoketest_SRCS
     qmlsmoketest.cpp
@@ -190,8 +193,7 @@ target_link_libraries(qmlsmoketest
     Qt6::Test
 )
 
-add_test(NAME qmlsmoketest COMMAND qmlsmoketest)
-set_tests_properties(qmlsmoketest PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+latte_add_offscreen_test(qmlsmoketest)
 
 set(sourcecontracttest_SRCS
     sourcecontracttest.cpp
@@ -208,8 +210,7 @@ target_link_libraries(sourcecontracttest
     Qt6::Test
 )
 
-add_test(NAME sourcecontracttest COMMAND sourcecontracttest)
-set_tests_properties(sourcecontracttest PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+latte_add_offscreen_test(sourcecontracttest)
 
 set(packagingcontracttest_SRCS
     packagingcontracttest.cpp
@@ -226,8 +227,7 @@ target_link_libraries(packagingcontracttest
     Qt6::Test
 )
 
-add_test(NAME packagingcontracttest COMMAND packagingcontracttest)
-set_tests_properties(packagingcontracttest PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+latte_add_offscreen_test(packagingcontracttest)
 
 set(typesunittest_SRCS
     typesunittest.cpp
@@ -327,8 +327,7 @@ target_link_libraries(indicatorunittest
     KF6::XmlGui
 )
 
-add_test(NAME indicatorunittest COMMAND indicatorunittest)
-set_tests_properties(indicatorunittest PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+latte_add_offscreen_test(indicatorunittest)
 
 set(layoutunittest_SRCS
     layoutunittest.cpp
@@ -374,8 +373,7 @@ target_link_libraries(launcherunittest
     Plasma::Plasma
 )
 
-add_test(NAME launcherunittest COMMAND launcherunittest)
-set_tests_properties(launcherunittest PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+latte_add_offscreen_test(launcherunittest)
 
 set(genericsettingstest_SRCS
     genericsettingstest.cpp
@@ -398,8 +396,7 @@ target_link_libraries(genericsettingstest
     KF6::XmlGui
 )
 
-add_test(NAME genericsettingstest COMMAND genericsettingstest)
-set_tests_properties(genericsettingstest PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+latte_add_offscreen_test(genericsettingstest)
 
 set(schemecolorsunittest_SRCS
     schemecolorsunittest.cpp
@@ -454,8 +451,7 @@ target_link_libraries(wmunittest
     Plasma::Activities
 )
 
-add_test(NAME wmunittest COMMAND wmunittest)
-set_tests_properties(wmunittest PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+latte_add_offscreen_test(wmunittest)
 
 set(toolsunittest_SRCS
     toolsunittest.cpp
@@ -527,8 +523,7 @@ target_link_libraries(toolsunittest
     Plasma::Plasma
 )
 
-add_test(NAME toolsunittest COMMAND toolsunittest)
-set_tests_properties(toolsunittest PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+latte_add_offscreen_test(toolsunittest)
 
 
 set(knscompatunittest_SRCS
@@ -619,8 +614,7 @@ target_link_libraries(panelshadowunittest
     Plasma::Plasma
 )
 
-add_test(NAME panelshadowunittest COMMAND panelshadowunittest)
-set_tests_properties(panelshadowunittest PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+latte_add_offscreen_test(panelshadowunittest)
 
 set(contextmenuunittest_SRCS
     contextmenuunittest.cpp
@@ -642,8 +636,7 @@ target_link_libraries(contextmenuunittest
     Qt6::Widgets
 )
 
-add_test(NAME contextmenuunittest COMMAND contextmenuunittest)
-set_tests_properties(contextmenuunittest PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+latte_add_offscreen_test(contextmenuunittest)
 
 set(shortcutunittest_SRCS
     shortcutunittest.cpp
@@ -696,8 +689,7 @@ target_link_libraries(declarativecoreunittest
     Plasma::PlasmaQuick
 )
 
-add_test(NAME declarativecoreunittest COMMAND declarativecoreunittest)
-set_tests_properties(declarativecoreunittest PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+latte_add_offscreen_test(declarativecoreunittest)
 
 set(containmentlayoutunittest_SRCS
     containmentlayoutunittest.cpp
@@ -723,8 +715,7 @@ target_link_libraries(containmentlayoutunittest
     Plasma::PlasmaQuick
 )
 
-add_test(NAME containmentlayoutunittest COMMAND containmentlayoutunittest)
-set_tests_properties(containmentlayoutunittest PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+latte_add_offscreen_test(containmentlayoutunittest)
 
 
 set(pluginregistrationunittest_SRCS
@@ -837,8 +828,7 @@ target_link_libraries(containmentactionmenuunittest
     Plasma::Plasma
 )
 
-add_test(NAME containmentactionmenuunittest COMMAND containmentactionmenuunittest)
-set_tests_properties(containmentactionmenuunittest PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+latte_add_offscreen_test(containmentactionmenuunittest)
 
 
 set(settingsviewunittest_SRCS
@@ -862,8 +852,7 @@ target_link_libraries(settingsviewunittest
     KF6::I18n
 )
 
-add_test(NAME settingsviewunittest COMMAND settingsviewunittest)
-set_tests_properties(settingsviewunittest PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+latte_add_offscreen_test(settingsviewunittest)
 
 set(latte_autotest_targets
     dataunittest
