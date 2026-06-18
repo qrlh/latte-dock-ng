@@ -23,6 +23,7 @@ private Q_SLOTS:
     void optOutDoesNotWriteOverrides();
     void usesConfiguredSystemQmlRoot();
     void usesConfiguredUserQmlRoot();
+    void ignoresRelativeConfiguredUserQmlRoot();
     void missingSystemQmlRootDoesNotCreatePartialOverrides();
 
 private:
@@ -247,6 +248,24 @@ void KnsCompatUnitTest::usesConfiguredUserQmlRoot()
     QVERIFY(QFile::exists(userQml.path() + QStringLiteral("/org/kde/newstuff/qmldir")));
     QVERIFY(QFile::exists(userQml.path() + QStringLiteral("/org/kde/kirigami/controls/qmldir")));
     QVERIFY(!QFile::exists(qmlRoot() + QStringLiteral("/org/kde/kirigami/templates/qmldir")));
+}
+
+void KnsCompatUnitTest::ignoresRelativeConfiguredUserQmlRoot()
+{
+    QTemporaryDir home;
+    QTemporaryDir data;
+    QTemporaryDir systemQml;
+    isolateHomeAndData(home, data);
+    QVERIFY(systemQml.isValid());
+    createSystemQmlRoot(systemQml.path());
+    qputenv("LATTE_KNS_COMPAT_SYSTEM_QML_ROOTS", QFile::encodeName(systemQml.path()));
+    qputenv("LATTE_KNS_COMPAT_USER_QML_ROOT", "relative-qml-root");
+    QDir(QStringLiteral("relative-qml-root")).removeRecursively();
+
+    ensureKnsCompat();
+
+    QVERIFY(QFile::exists(qmlRoot() + QStringLiteral("/org/kde/kirigami/templates/qmldir")));
+    QVERIFY(!QFile::exists(QStringLiteral("relative-qml-root/org/kde/kirigami/templates/qmldir")));
 }
 
 void KnsCompatUnitTest::missingSystemQmlRootDoesNotCreatePartialOverrides()

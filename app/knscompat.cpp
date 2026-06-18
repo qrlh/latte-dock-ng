@@ -297,7 +297,7 @@ static QString userLocalQmlBase(const QString &systemQmlBase)
 {
     if (qEnvironmentVariableIsSet(kUserRootEnv)) {
         const QString configuredRoot = QDir::cleanPath(QString::fromLocal8Bit(qgetenv(kUserRootEnv)));
-        if (!configuredRoot.isEmpty()) {
+        if (!configuredRoot.isEmpty() && QDir::isAbsolutePath(configuredRoot)) {
             return configuredRoot;
         }
     }
