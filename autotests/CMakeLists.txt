@@ -195,6 +195,7 @@ target_compile_definitions(qmlsmoketest PRIVATE
     LATTE_CORE_PLUGIN="$<TARGET_FILE:lattecoreplugin>"
     LATTE_RESTORE_ANIMATION_QML="${CMAKE_SOURCE_DIR}/declarativeimports/abilities/items/basicitem/RestoreAnimation.qml"
     LATTE_SHOW_WINDOW_ANIMATION_QML="${CMAKE_SOURCE_DIR}/plasmoid/package/contents/ui/task/animations/ShowWindowAnimation.qml"
+    LATTE_PARABOLIC_ITEM_QML="${CMAKE_SOURCE_DIR}/declarativeimports/abilities/items/basicitem/ParabolicItem.qml"
 )
 
 target_link_libraries(qmlsmoketest

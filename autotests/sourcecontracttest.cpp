@@ -18,7 +18,6 @@ private Q_SLOTS:
     void latteTasksExposesPlasmaLauncherApi();
     void latteDockDbusExportsLauncherApi();
     void containmentClearsParabolicStateWhenEdgeChanges();
-    void parabolicAnimationRecoveryKeepsZoomStateBounded();
     void launcherRestoreCoversGeometryTransitionSettling();
     void sessionShutdownHandlingMatchesStableWaylandPath();
     void itemsAlignmentIsSeparateAndJustifyOnly();
@@ -28,6 +27,7 @@ private Q_SLOTS:
     void layoutDetailsExposeCustomColorSchemeSelector();
     void restoreAnimationContractMovedToQmlSmokeTest();
     void showWindowAnimationContractMovedToQmlSmokeTest();
+    void parabolicItemContractMovedToQmlSmokeTest();
     void autotestAggregateTargetDocumentsFullSuiteBuild();
     void coverageEstimateUsesReusableScript();
     void cmakeTargetResolutionUsesSharedHelpers();
@@ -144,18 +144,6 @@ void SourceContractTest::containmentClearsParabolicStateWhenEdgeChanges()
     QVERIFY(source.contains(QStringLiteral("function onLocationChanged() {\n            root.resetModernParabolicOffsets();")));
     QVERIFY(source.contains(QStringLiteral("function onFormFactorChanged() {\n            root.resetModernParabolicOffsets();")));
     QVERIFY(source.contains(QStringLiteral("function onShowingAfterRelocationFinished() {\n            root.resetModernParabolicOffsets();")));
-}
-
-void SourceContractTest::parabolicAnimationRecoveryKeepsZoomStateBounded()
-{
-    QFile parabolicItem(QStringLiteral(LATTE_SOURCE_DIR "/declarativeimports/abilities/items/basicitem/ParabolicItem.qml"));
-    QVERIFY(parabolicItem.open(QFile::ReadOnly));
-
-    const QString parabolicSource = QString::fromUtf8(parabolicItem.readAll());
-    QVERIFY(parabolicSource.contains(QStringLiteral("function onFormFactorChanged()")));
-    QVERIFY(parabolicSource.contains(QStringLiteral("parabolicItem.zoom = 1.01")));
-    QVERIFY(parabolicSource.contains(QStringLiteral("parabolicItem.zoom = 1")));
-    QVERIFY(parabolicSource.contains(QStringLiteral("parabolicItem.sendEndOfNeedBothAxisAnimation();")));
 }
 
 void SourceContractTest::launcherRestoreCoversGeometryTransitionSettling()
@@ -388,6 +376,22 @@ void SourceContractTest::showWindowAnimationContractMovedToQmlSmokeTest()
     QVERIFY(sourceContracts.open(QFile::ReadOnly));
     const QString sourceContractSource = QString::fromUtf8(sourceContracts.readAll());
     const QString oldSourceLock = QStringLiteral("QFile ") + QStringLiteral("showWindowAnimation");
+    QVERIFY(!sourceContractSource.contains(oldSourceLock));
+}
+
+void SourceContractTest::parabolicItemContractMovedToQmlSmokeTest()
+{
+    QFile qmlSmoke(QStringLiteral(LATTE_SOURCE_DIR "/autotests/qmlsmoketest.cpp"));
+    QVERIFY(qmlSmoke.open(QFile::ReadOnly));
+    const QString qmlSmokeSource = QString::fromUtf8(qmlSmoke.readAll());
+    QVERIFY(qmlSmokeSource.contains(QStringLiteral("parabolicItemZoomRecoveryLoadsFromSource")));
+    QVERIFY(qmlSmokeSource.contains(QStringLiteral("LATTE_PARABOLIC_ITEM_QML")));
+    QVERIFY(qmlSmokeSource.contains(QStringLiteral("sendEndOfNeedBothAxisAnimation")));
+
+    QFile sourceContracts(QStringLiteral(LATTE_SOURCE_DIR "/autotests/sourcecontracttest.cpp"));
+    QVERIFY(sourceContracts.open(QFile::ReadOnly));
+    const QString sourceContractSource = QString::fromUtf8(sourceContracts.readAll());
+    const QString oldSourceLock = QStringLiteral("QFile ") + QStringLiteral("parabolicItem");
     QVERIFY(!sourceContractSource.contains(oldSourceLock));
 }
 

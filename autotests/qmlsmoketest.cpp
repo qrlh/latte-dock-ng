@@ -7,6 +7,7 @@
 #include <QQmlContext>
 #include <QQmlEngine>
 
+#include <QColor>
 #include <QDir>
 #include <QFile>
 #include <QMetaObject>
@@ -23,6 +24,7 @@ private Q_SLOTS:
     void latteCoreQmlPluginLoadsFromBuildTree();
     void restoreAnimationLoadsFromSource();
     void showWindowAnimationFrozenZoomDecisionLoadsFromSource();
+    void parabolicItemZoomRecoveryLoadsFromSource();
 };
 
 class ParabolicTargetStub : public QObject
@@ -53,11 +55,102 @@ private:
     qreal m_zoom{1.5};
 };
 
+class EventSinkStub : public QObject
+{
+    Q_OBJECT
+
+public:
+    Q_INVOKABLE void addEvent(const QString &)
+    {
+        ++m_addCount;
+    }
+
+    Q_INVOKABLE void removeEvent(const QString &)
+    {
+        ++m_removeCount;
+    }
+
+    int addCount() const
+    {
+        return m_addCount;
+    }
+
+    int removeCount() const
+    {
+        return m_removeCount;
+    }
+
+private:
+    int m_addCount{0};
+    int m_removeCount{0};
+};
+
+class ParabolicAbilityStub : public QObject
+{
+    Q_OBJECT
+    Q_PROPERTY(QVariantMap factor READ factor CONSTANT)
+    Q_PROPERTY(bool directRenderingEnabled READ directRenderingEnabled WRITE setDirectRenderingEnabled NOTIFY directRenderingEnabledChanged)
+    Q_PROPERTY(bool isEnabled READ isEnabled CONSTANT)
+
+public:
+    QVariantMap factor() const
+    {
+        return QVariantMap{
+            {QStringLiteral("zoom"), 1.6},
+            {QStringLiteral("marginThicknessZoomInPercentage"), 0.0},
+        };
+    }
+
+    bool directRenderingEnabled() const
+    {
+        return m_directRenderingEnabled;
+    }
+
+    void setDirectRenderingEnabled(bool enabled)
+    {
+        if (m_directRenderingEnabled == enabled) {
+            return;
+        }
+
+        m_directRenderingEnabled = enabled;
+        Q_EMIT directRenderingEnabledChanged();
+    }
+
+    bool isEnabled() const
+    {
+        return true;
+    }
+
+Q_SIGNALS:
+    void directRenderingEnabledChanged();
+
+private:
+    bool m_directRenderingEnabled{true};
+};
+
 class AbilityItemStub : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(QObject *parabolicItem READ parabolicItem CONSTANT)
+    Q_PROPERTY(QVariantMap abilities READ abilities CONSTANT)
     Q_PROPERTY(int animationTime READ animationTime CONSTANT)
+    Q_PROPERTY(bool isHorizontal READ isHorizontal CONSTANT)
+    Q_PROPERTY(bool isVertical READ isVertical CONSTANT)
+    Q_PROPERTY(bool visible READ isVisible WRITE setVisible NOTIFY visibleChanged)
+    Q_PROPERTY(bool isSeparator READ isSeparator CONSTANT)
+    Q_PROPERTY(bool isHidden READ isHidden CONSTANT)
+    Q_PROPERTY(int location READ location CONSTANT)
+    Q_PROPERTY(qreal iconOffsetX READ iconOffsetX CONSTANT)
+    Q_PROPERTY(qreal iconOffsetY READ iconOffsetY CONSTANT)
+    Q_PROPERTY(int iconTransformOrigin READ iconTransformOrigin CONSTANT)
+    Q_PROPERTY(qreal iconOpacity READ iconOpacity CONSTANT)
+    Q_PROPERTY(qreal iconRotation READ iconRotation CONSTANT)
+    Q_PROPERTY(qreal iconScale READ iconScale CONSTANT)
+    Q_PROPERTY(QObject *contentItem READ contentItem NOTIFY contentItemChanged)
+    Q_PROPERTY(bool isMonochromaticForcedContentItem READ isMonochromaticForcedContentItem CONSTANT)
+    Q_PROPERTY(QObject *monochromizedItem READ monochromizedItem CONSTANT)
+    Q_PROPERTY(int itemIndex READ itemIndex CONSTANT)
+    Q_PROPERTY(bool parabolicAreaContainsMouse READ parabolicAreaContainsMouse CONSTANT)
 
 public:
     explicit AbilityItemStub(QObject *parabolicItem, QObject *parent = nullptr)
@@ -71,13 +164,176 @@ public:
         return m_parabolicItem;
     }
 
+    QVariantMap abilities() const
+    {
+        return QVariantMap{
+            {QStringLiteral("metrics"),
+             QVariantMap{
+                 {QStringLiteral("iconSize"), 48},
+                 {QStringLiteral("mask"),
+                  QVariantMap{{QStringLiteral("thickness"), QVariantMap{{QStringLiteral("normalForItems"), 48}, {QStringLiteral("zoomedForItems"), 64}}}}},
+                 {QStringLiteral("margin"), QVariantMap{{QStringLiteral("screenEdge"), 0}, {QStringLiteral("tailThickness"), 0}}},
+                 {QStringLiteral("marginsArea"), QVariantMap{{QStringLiteral("iconSize"), 48}, {QStringLiteral("tailThickness"), 0}}},
+                 {QStringLiteral("totals"),
+                  QVariantMap{{QStringLiteral("length"), 48}, {QStringLiteral("thicknessEdges"), 0}, {QStringLiteral("lengthPaddings"), 0}}},
+             }},
+            {QStringLiteral("parabolic"), QVariant::fromValue(static_cast<QObject *>(const_cast<ParabolicAbilityStub *>(&m_parabolic)))},
+            {QStringLiteral("animations"),
+             QVariantMap{{QStringLiteral("needBothAxis"), QVariant::fromValue(static_cast<QObject *>(const_cast<EventSinkStub *>(&m_needBothAxis)))}}},
+            {QStringLiteral("myView"),
+             QVariantMap{{QStringLiteral("itemShadow"), QVariantMap{{QStringLiteral("isEnabled"), false}, {QStringLiteral("shadowColor"), QColor(Qt::black)}}},
+                         {QStringLiteral("badgesIn3DStyle"), false}}},
+            {QStringLiteral("environment"), QVariantMap{{QStringLiteral("isGraphicsSystemAccelerated"), false}}},
+            {QStringLiteral("indexer"), QVariantMap{{QStringLiteral("inMarginsArea"), false}}},
+            {QStringLiteral("debug"), QVariantMap{{QStringLiteral("graphicsEnabled"), false}}},
+            {QStringLiteral("shortcuts"),
+             QVariantMap{{QStringLiteral("showPositionShortcutBadges"), false},
+                         {QStringLiteral("isEnabled"), false},
+                         {QStringLiteral("badges"), QStringList{}},
+                         {QStringLiteral("shortcutIndex"), QVariant::fromValue(static_cast<QObject *>(const_cast<AbilityItemStub *>(this)))}}},
+        };
+    }
+
     int animationTime() const
     {
         return 10;
     }
 
+    bool isHorizontal() const
+    {
+        return true;
+    }
+
+    bool isVertical() const
+    {
+        return false;
+    }
+
+    bool isVisible() const
+    {
+        return m_visible;
+    }
+
+    void setVisible(bool visible)
+    {
+        if (m_visible == visible) {
+            return;
+        }
+
+        m_visible = visible;
+        Q_EMIT visibleChanged();
+    }
+
+    bool isSeparator() const
+    {
+        return false;
+    }
+
+    bool isHidden() const
+    {
+        return false;
+    }
+
+    int location() const
+    {
+        return 4;
+    }
+
+    qreal iconOffsetX() const
+    {
+        return 0;
+    }
+
+    qreal iconOffsetY() const
+    {
+        return 0;
+    }
+
+    int iconTransformOrigin() const
+    {
+        return 4;
+    }
+
+    qreal iconOpacity() const
+    {
+        return 1.0;
+    }
+
+    qreal iconRotation() const
+    {
+        return 0;
+    }
+
+    qreal iconScale() const
+    {
+        return 1.0;
+    }
+
+    QObject *contentItem() const
+    {
+        return nullptr;
+    }
+
+    bool isMonochromaticForcedContentItem() const
+    {
+        return false;
+    }
+
+    QObject *monochromizedItem() const
+    {
+        return nullptr;
+    }
+
+    int itemIndex() const
+    {
+        return 1;
+    }
+
+    bool parabolicAreaContainsMouse() const
+    {
+        return false;
+    }
+
+    Q_INVOKABLE int shortcutIndex(int) const
+    {
+        return -1;
+    }
+
+    int needBothAxisAddCount() const
+    {
+        return m_needBothAxis.addCount();
+    }
+
+    int needBothAxisRemoveCount() const
+    {
+        return m_needBothAxis.removeCount();
+    }
+
+Q_SIGNALS:
+    void visibleChanged();
+    void contentItemChanged();
+    void parabolicAreaLastMousePosChanged();
+    void itemIndexChanged();
+
 private:
     QObject *m_parabolicItem{nullptr};
+    bool m_visible{true};
+    ParabolicAbilityStub m_parabolic;
+    EventSinkStub m_needBothAxis;
+};
+
+class PlasmoidStub : public QObject
+{
+    Q_OBJECT
+
+public:
+    void emitFormFactorChanged()
+    {
+        Q_EMIT formFactorChanged();
+    }
+
+Q_SIGNALS:
+    void formFactorChanged();
 };
 
 class TaskItemStub : public QObject
@@ -261,6 +517,18 @@ static void addLatteCoreImport(QQmlEngine &engine, QTemporaryDir &importRoot)
     engine.addImportPath(importRoot.path());
 }
 
+static void addLatteComponentsImport(QQmlEngine &engine, QTemporaryDir &importRoot)
+{
+    QVERIFY(importRoot.isValid());
+
+    const QString modulePath = importRoot.path() + QStringLiteral("/org/kde/latte/components");
+    QVERIFY(QDir().mkpath(modulePath));
+    QVERIFY(QFile::copy(QStringLiteral(LATTE_SOURCE_DIR "/declarativeimports/components/qmldir"), modulePath + QStringLiteral("/qmldir")));
+    QVERIFY(QFile::copy(QStringLiteral(LATTE_SOURCE_DIR "/declarativeimports/components/BadgeText.qml"), modulePath + QStringLiteral("/BadgeText.qml")));
+
+    engine.addImportPath(importRoot.path());
+}
+
 void QmlSmokeTest::latteCoreQmlPluginLoadsFromBuildTree()
 {
     QTemporaryDir importRoot;
@@ -373,6 +641,55 @@ void QmlSmokeTest::showWindowAnimationFrozenZoomDecisionLoadsFromSource()
     taskItem.setParabolicAreaIsCurrent(true);
     QVERIFY(QMetaObject::invokeMethod(object.get(), "keepFrozenZoomForCurrentTask", Q_RETURN_ARG(QVariant, keepFrozenZoom)));
     QCOMPARE(keepFrozenZoom.toBool(), true);
+}
+
+void QmlSmokeTest::parabolicItemZoomRecoveryLoadsFromSource()
+{
+    QTemporaryDir importRoot;
+    QQmlEngine engine;
+    addLatteCoreImport(engine, importRoot);
+    addLatteComponentsImport(engine, importRoot);
+
+    QQmlContext context(engine.rootContext());
+    ParabolicTargetStub parabolicTarget;
+    AbilityItemStub abilityItem(&parabolicTarget);
+    PlasmoidStub plasmoid;
+    QVariantMap restoreAnimation{{QStringLiteral("running"), false}};
+    QVariantMap theme{
+        {QStringLiteral("textColor"), QColor(Qt::white)},
+        {QStringLiteral("backgroundColor"), QColor(Qt::black)},
+    };
+
+    context.setContextProperty(QStringLiteral("abilityItem"), &abilityItem);
+    context.setContextProperty(QStringLiteral("plasmoid"), &plasmoid);
+    context.setContextProperty(QStringLiteral("restoreAnimation"), restoreAnimation);
+    context.setContextProperty(QStringLiteral("theme"), theme);
+    context.setContextProperty(QStringLiteral("latteBridge"), QVariant());
+
+    QQmlComponent component(&engine, QUrl::fromLocalFile(QStringLiteral(LATTE_PARABOLIC_ITEM_QML)));
+    std::unique_ptr<QObject> object(component.create(&context));
+    if (!object) {
+        qWarning() << component.errors();
+    }
+
+    QVERIFY(object);
+    QVERIFY(object->setProperty("zoom", 1.6));
+    QVERIFY(object->setProperty("zoomLength", 1.6));
+    QVERIFY(object->setProperty("zoomThickness", 1.6));
+
+    plasmoid.emitFormFactorChanged();
+    QCOMPARE(object->property("zoom").toReal(), 1.0);
+    QCOMPARE(object->property("zoomLength").toReal(), 1.0);
+    QCOMPARE(object->property("zoomThickness").toReal(), 1.0);
+
+    QVERIFY(object->setProperty("zoom", 1.4));
+    QVERIFY(object->property("isZoomed").toBool());
+    const int removedBefore = abilityItem.needBothAxisRemoveCount();
+    QVariant ignoredReturn;
+    QVERIFY(QMetaObject::invokeMethod(object.get(), "sendEndOfNeedBothAxisAnimation", Q_RETURN_ARG(QVariant, ignoredReturn)));
+    QVERIFY(!object->property("isZoomed").toBool());
+    QCOMPARE(abilityItem.needBothAxisRemoveCount(), removedBefore + 1);
+    QVERIFY(abilityItem.needBothAxisAddCount() > 0);
 }
 
 QTEST_MAIN(QmlSmokeTest)
