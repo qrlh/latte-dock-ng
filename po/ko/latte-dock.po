@@ -4360,3 +4360,39 @@ msgstr "사용 가능한 위젯 없음"
 
 #~ msgid "Select image..."
 #~ msgstr "이미지 선택..."
+
+#: shell/package/contents/configuration/pages/BehaviorConfig.qml:334
+#, kde-format
+msgctxt "dock items alignment"
+msgid "Items alignment"
+msgstr "항목 정렬"
+
+#: shell/package/contents/configuration/pages/BehaviorConfig.qml:369
+#, kde-format
+msgctxt "left items alignment"
+msgid "Left"
+msgstr "왼쪽"
+
+#: shell/package/contents/configuration/pages/BehaviorConfig.qml:385
+#, kde-format
+msgctxt "center items alignment"
+msgid "Center"
+msgstr "가운데"
+
+#: shell/package/contents/configuration/pages/BehaviorConfig.qml:401
+#, kde-format
+msgctxt "right items alignment"
+msgid "Right"
+msgstr "오른쪽"
+
+#: shell/package/contents/configuration/pages/BehaviorConfig.qml:369
+#, kde-format
+msgctxt "top items alignment"
+msgid "Top"
+msgstr "위"
+
+#: shell/package/contents/configuration/pages/BehaviorConfig.qml:401
+#, kde-format
+msgctxt "bottom items alignment"
+msgid "Bottom"
+msgstr "아래"

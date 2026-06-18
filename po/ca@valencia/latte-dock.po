@@ -3940,3 +3940,39 @@ msgstr "No hi ha cap giny que coincidisca amb els termes de la busca"
 #, kde-format
 msgid "No widgets available"
 msgstr "No hi ha cap giny disponible"
+
+#: shell/package/contents/configuration/pages/BehaviorConfig.qml:334
+#, kde-format
+msgctxt "dock items alignment"
+msgid "Items alignment"
+msgstr "Alineació dels elements"
+
+#: shell/package/contents/configuration/pages/BehaviorConfig.qml:369
+#, kde-format
+msgctxt "left items alignment"
+msgid "Left"
+msgstr "Esquerra"
+
+#: shell/package/contents/configuration/pages/BehaviorConfig.qml:385
+#, kde-format
+msgctxt "center items alignment"
+msgid "Center"
+msgstr "Centre"
+
+#: shell/package/contents/configuration/pages/BehaviorConfig.qml:401
+#, kde-format
+msgctxt "right items alignment"
+msgid "Right"
+msgstr "Dreta"
+
+#: shell/package/contents/configuration/pages/BehaviorConfig.qml:369
+#, kde-format
+msgctxt "top items alignment"
+msgid "Top"
+msgstr "Superior"
+
+#: shell/package/contents/configuration/pages/BehaviorConfig.qml:401
+#, kde-format
+msgctxt "bottom items alignment"
+msgid "Bottom"
+msgstr "Inferior"

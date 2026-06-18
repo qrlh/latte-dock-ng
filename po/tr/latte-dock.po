@@ -3888,3 +3888,39 @@ msgstr "Arama terimi için bir araç takımı eşleşmedi"
 #, kde-format
 msgid "No widgets available"
 msgstr "Kullanılabilir araç takımı yok"
+
+#: shell/package/contents/configuration/pages/BehaviorConfig.qml:334
+#, kde-format
+msgctxt "dock items alignment"
+msgid "Items alignment"
+msgstr "Ögelerin hizalaması"
+
+#: shell/package/contents/configuration/pages/BehaviorConfig.qml:369
+#, kde-format
+msgctxt "left items alignment"
+msgid "Left"
+msgstr "Sol"
+
+#: shell/package/contents/configuration/pages/BehaviorConfig.qml:385
+#, kde-format
+msgctxt "center items alignment"
+msgid "Center"
+msgstr "Orta"
+
+#: shell/package/contents/configuration/pages/BehaviorConfig.qml:401
+#, kde-format
+msgctxt "right items alignment"
+msgid "Right"
+msgstr "Sağ"
+
+#: shell/package/contents/configuration/pages/BehaviorConfig.qml:369
+#, kde-format
+msgctxt "top items alignment"
+msgid "Top"
+msgstr "Üst"
+
+#: shell/package/contents/configuration/pages/BehaviorConfig.qml:401
+#, kde-format
+msgctxt "bottom items alignment"
+msgid "Bottom"
+msgstr "Alt"

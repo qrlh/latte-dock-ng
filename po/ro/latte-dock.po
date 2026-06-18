@@ -3924,3 +3924,39 @@ msgstr ""
 
 #~ msgid "Small steps for icon sizes in automatic modes"
 #~ msgstr "Pași mici pentru dimensiunea pictogramelor în modurile automate"
+
+#: shell/package/contents/configuration/pages/BehaviorConfig.qml:334
+#, kde-format
+msgctxt "dock items alignment"
+msgid "Items alignment"
+msgstr "Alinierea elementelor"
+
+#: shell/package/contents/configuration/pages/BehaviorConfig.qml:369
+#, kde-format
+msgctxt "left items alignment"
+msgid "Left"
+msgstr "Stânga"
+
+#: shell/package/contents/configuration/pages/BehaviorConfig.qml:385
+#, kde-format
+msgctxt "center items alignment"
+msgid "Center"
+msgstr "Centru"
+
+#: shell/package/contents/configuration/pages/BehaviorConfig.qml:401
+#, kde-format
+msgctxt "right items alignment"
+msgid "Right"
+msgstr "Dreapta"
+
+#: shell/package/contents/configuration/pages/BehaviorConfig.qml:369
+#, kde-format
+msgctxt "top items alignment"
+msgid "Top"
+msgstr "Sus"
+
+#: shell/package/contents/configuration/pages/BehaviorConfig.qml:401
+#, kde-format
+msgctxt "bottom items alignment"
+msgid "Bottom"
+msgstr "Jos"

@@ -4502,3 +4502,39 @@ msgstr "Aucun composant graphique disponible"
 
 #~ msgid "Quit"
 #~ msgstr "Quitter"
+
+#: shell/package/contents/configuration/pages/BehaviorConfig.qml:334
+#, kde-format
+msgctxt "dock items alignment"
+msgid "Items alignment"
+msgstr "Alignement des éléments"
+
+#: shell/package/contents/configuration/pages/BehaviorConfig.qml:369
+#, kde-format
+msgctxt "left items alignment"
+msgid "Left"
+msgstr "Gauche"
+
+#: shell/package/contents/configuration/pages/BehaviorConfig.qml:385
+#, kde-format
+msgctxt "center items alignment"
+msgid "Center"
+msgstr "Centre"
+
+#: shell/package/contents/configuration/pages/BehaviorConfig.qml:401
+#, kde-format
+msgctxt "right items alignment"
+msgid "Right"
+msgstr "Droite"
+
+#: shell/package/contents/configuration/pages/BehaviorConfig.qml:369
+#, kde-format
+msgctxt "top items alignment"
+msgid "Top"
+msgstr "Haut"
+
+#: shell/package/contents/configuration/pages/BehaviorConfig.qml:401
+#, kde-format
+msgctxt "bottom items alignment"
+msgid "Bottom"
+msgstr "Bas"

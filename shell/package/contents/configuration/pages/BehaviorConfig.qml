@@ -331,7 +331,7 @@ PlasmaComponents.Page {
             spacing: units.smallSpacing
 
             LatteComponents.Header {
-                text: i18n("Items alignment")
+                text: i18nc("dock items alignment", "Items alignment")
             }
 
             RowLayout {
