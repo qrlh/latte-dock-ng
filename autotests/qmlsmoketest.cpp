@@ -16,6 +16,7 @@
 
 #include <cmath>
 #include <memory>
+#include <utility>
 
 class QmlSmokeTest : public QObject
 {
@@ -27,6 +28,7 @@ private Q_SLOTS:
     void showWindowAnimationFrozenZoomDecisionLoadsFromSource();
     void parabolicItemZoomRecoveryLoadsFromSource();
     void compactAppletPopupSizingLoadsFromSource();
+    void launchersGeometryRestoreSchedulingLoadsFromSource();
 };
 
 class ParabolicTargetStub : public QObject
@@ -338,6 +340,129 @@ Q_SIGNALS:
     void formFactorChanged();
 };
 
+class LaunchersConfigurationStub : public QObject
+{
+    Q_OBJECT
+    Q_PROPERTY(QStringList launchers59 READ launchers59 WRITE setLaunchers59 NOTIFY launchers59Changed)
+    Q_PROPERTY(bool userConfiguring READ userConfiguring WRITE setUserConfiguring NOTIFY userConfiguringChanged)
+
+public:
+    explicit LaunchersConfigurationStub(QStringList launchers, QObject *parent = nullptr)
+        : QObject(parent)
+        , m_launchers(std::move(launchers))
+    {
+    }
+
+    QStringList launchers59() const
+    {
+        return m_launchers;
+    }
+
+    void setLaunchers59(const QStringList &launchers)
+    {
+        m_launchers = launchers;
+        Q_EMIT launchers59Changed();
+    }
+
+    bool userConfiguring() const
+    {
+        return m_userConfiguring;
+    }
+
+    void setUserConfiguring(bool userConfiguring)
+    {
+        if (m_userConfiguring == userConfiguring) {
+            return;
+        }
+
+        m_userConfiguring = userConfiguring;
+        Q_EMIT userConfiguringChanged();
+    }
+
+Q_SIGNALS:
+    void launchers59Changed();
+    void userConfiguringChanged();
+
+private:
+    QStringList m_launchers;
+    bool m_userConfiguring{false};
+};
+
+class LaunchersPlasmoidStub : public QObject
+{
+    Q_OBJECT
+    Q_PROPERTY(int id READ id CONSTANT)
+    Q_PROPERTY(QObject *configuration READ configuration CONSTANT)
+
+public:
+    explicit LaunchersPlasmoidStub(QStringList launchers, QObject *parent = nullptr)
+        : QObject(parent)
+        , m_configuration(std::move(launchers), this)
+    {
+    }
+
+    int id() const
+    {
+        return 1;
+    }
+
+    QObject *configuration()
+    {
+        return &m_configuration;
+    }
+
+Q_SIGNALS:
+    void locationChanged();
+    void formFactorChanged();
+    void userConfiguringChanged();
+
+private:
+    LaunchersConfigurationStub m_configuration;
+};
+
+class MyViewReadyStub : public QObject
+{
+    Q_OBJECT
+    Q_PROPERTY(bool isReady READ isReady WRITE setReady NOTIFY isReadyChanged)
+
+public:
+    bool isReady() const
+    {
+        return m_ready;
+    }
+
+    void setReady(bool ready)
+    {
+        if (m_ready == ready) {
+            return;
+        }
+
+        m_ready = ready;
+        Q_EMIT isReadyChanged();
+    }
+
+Q_SIGNALS:
+    void isReadyChanged();
+
+private:
+    bool m_ready{true};
+};
+
+class AppletAbilitiesStub : public QObject
+{
+    Q_OBJECT
+    Q_PROPERTY(QObject *myView READ myView CONSTANT)
+
+public:
+    QObject *myView()
+    {
+        return &m_myView;
+    }
+
+private:
+    MyViewReadyStub m_myView;
+};
+
 class TaskItemStub : public QObject
 {
     Q_OBJECT
@@ -505,6 +630,57 @@ class TasksModelStub : public QObject
 public:
     Q_INVOKABLE int launcherPosition(const QString &) const { return -1; }
     Q_INVOKABLE QStringList launcherActivities(const QString &) const { return {}; }
+};
+
+class TasksModelForLaunchersStub : public QObject
+{
+    Q_OBJECT
+    Q_PROPERTY(QStringList launcherList READ launcherList WRITE setLauncherList NOTIFY launcherListChanged)
+    Q_PROPERTY(int count READ count CONSTANT)
+
+public:
+    QStringList launcherList() const
+    {
+        return m_launcherList;
+    }
+
+    void setLauncherList(const QStringList &launcherList)
+    {
+        m_launcherList = launcherList;
+        Q_EMIT launcherListChanged();
+    }
+
+    int count() const
+    {
+        return m_launcherList.count();
+    }
+
+    int syncCount() const
+    {
+        return m_syncCount;
+    }
+
+    Q_INVOKABLE int launcherPosition(const QString &launcher) const
+    {
+        return m_launcherList.indexOf(launcher);
+    }
+
+    Q_INVOKABLE QStringList launcherActivities(const QString &) const
+    {
+        return {};
+    }
+
+    Q_INVOKABLE void syncLaunchers()
+    {
+        ++m_syncCount;
+    }
+
+Q_SIGNALS:
+    void launcherListChanged();
+
+private:
+    QStringList m_launcherList;
+    int m_syncCount{0};
 };
 
 static void addLatteCoreImport(QQmlEngine &engine, QTemporaryDir &importRoot)
@@ -772,6 +948,72 @@ Item {
     QVERIFY(QMetaObject::invokeMethod(object.get(), "popupMaximumHeight", Q_RETURN_ARG(QVariant, menuMaximumHeight)));
     QVERIFY(std::isinf(menuMaximumWidth.toDouble()));
     QVERIFY(std::isinf(menuMaximumHeight.toDouble()));
+}
+
+void QmlSmokeTest::launchersGeometryRestoreSchedulingLoadsFromSource()
+{
+    QTemporaryDir importRoot;
+    QQmlEngine engine;
+    addLatteCoreImport(engine, importRoot);
+
+    QQmlContext context(engine.rootContext());
+    TasksModelForLaunchersStub tasksModel;
+    const QStringList storedLaunchers{
+        QStringLiteral("applications:org.kde.dolphin.desktop"),
+        QStringLiteral("applications:org.kde.konsole.desktop"),
+    };
+    const QStringList normalizedLaunchers{
+        QStringLiteral("preferred://filemanager"),
+        QStringLiteral("applications:org.kde.konsole.desktop"),
+    };
+    LaunchersPlasmoidStub plasmoid(storedLaunchers);
+    AppletAbilitiesStub appletAbilities;
+    QVariantMap activityInfo{{QStringLiteral("currentActivity"), QStringLiteral("current")}};
+
+    context.setContextProperty(QStringLiteral("plasmoid"), &plasmoid);
+    context.setContextProperty(QStringLiteral("appletAbilities"), &appletAbilities);
+    context.setContextProperty(QStringLiteral("activityInfo"), activityInfo);
+    context.setContextProperty(QStringLiteral("inDraggingPhase"), false);
+
+    QQmlComponent component(&engine, QUrl::fromLocalFile(QStringLiteral(LATTE_LAUNCHERS_QML)));
+    std::unique_ptr<QObject> object(component.create(&context));
+    if (!object) {
+        qWarning() << component.errors();
+    }
+
+    QVERIFY(object);
+    QVERIFY(object->setProperty("tasksModel", QVariant::fromValue(static_cast<QObject *>(&tasksModel))));
+
+    QVariant ignoredReturn;
+    QVERIFY(QMetaObject::invokeMethod(object.get(), "scheduleLaunchersRestore",
+                                      Q_RETURN_ARG(QVariant, ignoredReturn),
+                                      Q_ARG(QVariant, QStringLiteral("formFactorChanged"))));
+    QCOMPARE(object->property("_pendingRestoreReason").toString(), QStringLiteral("formFactorChanged"));
+    QCOMPARE(object->property("_geometryTransitionInProgress").toBool(), true);
+
+    const auto children = object->findChildren<QObject *>();
+    int runningRestoreTimers = 0;
+    bool launchersRestoreFinalTimerWasStarted = false;
+    for (QObject *child : children) {
+        if (child->property("running").toBool()) {
+            const int interval = child->property("interval").toInt();
+            if (interval == 450 || interval == 1200 || interval == 2200) {
+                ++runningRestoreTimers;
+            }
+            if (interval == 2200) {
+                launchersRestoreFinalTimerWasStarted = true;
+            }
+        }
+    }
+
+    QCOMPARE(runningRestoreTimers, 3);
+    QVERIFY(launchersRestoreFinalTimerWasStarted);
+
+    QVERIFY(QMetaObject::invokeMethod(object.get(), "restoreLaunchersFromConfig",
+                                      Q_RETURN_ARG(QVariant, ignoredReturn),
+                                      Q_ARG(QVariant, QStringLiteral("manual"))));
+    QCOMPARE(tasksModel.launcherList(), normalizedLaunchers);
+    QCOMPARE(tasksModel.syncCount(), 1);
 }
 
 QTEST_MAIN(QmlSmokeTest)

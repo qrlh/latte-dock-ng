@@ -17,7 +17,7 @@ private Q_SLOTS:
     void latteTasksExposesPlasmaLauncherApi();
     void latteDockDbusExportsLauncherApi();
     void containmentClearsParabolicStateWhenEdgeChanges();
-    void launcherRestoreCoversGeometryTransitionSettling();
+    void launchersRestoreContractMovedToQmlSmokeTest();
     void sessionShutdownHandlingMatchesStableWaylandPath();
     void itemsAlignmentIsSeparateAndJustifyOnly();
     void itemsAlignmentNormalizesDirectionsByFormFactor();
@@ -128,19 +128,21 @@ void SourceContractTest::containmentClearsParabolicStateWhenEdgeChanges()
     QVERIFY(source.contains(QStringLiteral("function onShowingAfterRelocationFinished() {\n            root.resetModernParabolicOffsets();")));
 }
 
-void SourceContractTest::launcherRestoreCoversGeometryTransitionSettling()
+void SourceContractTest::launchersRestoreContractMovedToQmlSmokeTest()
 {
-    QFile launchers(QStringLiteral(LATTE_SOURCE_DIR "/plasmoid/package/contents/ui/abilities/Launchers.qml"));
-    QVERIFY(launchers.open(QFile::ReadOnly));
+    QFile qmlSmoke(QStringLiteral(LATTE_SOURCE_DIR "/autotests/qmlsmoketest.cpp"));
+    QVERIFY(qmlSmoke.open(QFile::ReadOnly));
+    const QString qmlSmokeSource = QString::fromUtf8(qmlSmoke.readAll());
+    QVERIFY(qmlSmokeSource.contains(QStringLiteral("launchersGeometryRestoreSchedulingLoadsFromSource")));
+    QVERIFY(qmlSmokeSource.contains(QStringLiteral("LATTE_LAUNCHERS_QML")));
+    QVERIFY(qmlSmokeSource.contains(QStringLiteral("scheduleLaunchersRestore")));
+    QVERIFY(qmlSmokeSource.contains(QStringLiteral("launchersRestoreFinalTimer")));
 
-    const QString source = QString::fromUtf8(launchers.readAll());
-    QVERIFY(source.contains(QStringLiteral("function scheduleLaunchersRestore(reason)")));
-    QVERIFY(source.contains(QStringLiteral("launchersRestoreTimer.restart()")));
-    QVERIFY(source.contains(QStringLiteral("launchersRestoreFollowUpTimer.restart()")));
-    QVERIFY(source.contains(QStringLiteral("launchersRestoreFinalTimer.restart()")));
-    QVERIFY(source.contains(QStringLiteral("_launchers.restoreLaunchersFromConfig(_launchers._pendingRestoreReason + \":primary\")")));
-    QVERIFY(source.contains(QStringLiteral("_launchers.restoreLaunchersFromConfig(_launchers._pendingRestoreReason + \":followup\")")));
-    QVERIFY(source.contains(QStringLiteral("_launchers.restoreLaunchersFromConfig(_launchers._pendingRestoreReason + \":final\")")));
+    QFile sourceContracts(QStringLiteral(LATTE_SOURCE_DIR "/autotests/sourcecontracttest.cpp"));
+    QVERIFY(sourceContracts.open(QFile::ReadOnly));
+    const QString sourceContractSource = QString::fromUtf8(sourceContracts.readAll());
+    const QString oldSourceLock = QStringLiteral("QFile ") + QStringLiteral("launchers");
+    QVERIFY(!sourceContractSource.contains(oldSourceLock));
 }
 
 void SourceContractTest::sessionShutdownHandlingMatchesStableWaylandPath()
