@@ -33,6 +33,7 @@ private Q_SLOTS:
     void cmakeImportedTargetResolutionUsesSharedHelper();
     void cmakeTargetResolutionHelpersLiveInModule();
     void cmakeOffscreenTestsUseSharedHelper();
+    void cmakeAutotestRegistrationMaintainsAggregateTarget();
 };
 
 void SourceContractTest::pulseAudioBootstrapIsBounded()
@@ -476,6 +477,25 @@ void SourceContractTest::cmakeOffscreenTestsUseSharedHelper()
     QVERIFY(cmakeSource.contains(QStringLiteral("latte_add_offscreen_test(containmentactionmenuunittest)")));
     QVERIFY(!cmakeSource.contains(QStringLiteral("set_tests_properties(coreunittest PROPERTIES ENVIRONMENT \"QT_QPA_PLATFORM=offscreen\")")));
     QVERIFY(!cmakeSource.contains(QStringLiteral("set_tests_properties(settingsviewunittest PROPERTIES ENVIRONMENT \"QT_QPA_PLATFORM=offscreen\")")));
+}
+
+void SourceContractTest::cmakeAutotestRegistrationMaintainsAggregateTarget()
+{
+    QFile autotestsCMake(QStringLiteral(LATTE_SOURCE_DIR "/autotests/CMakeLists.txt"));
+    QVERIFY(autotestsCMake.open(QFile::ReadOnly));
+    const QString cmakeSource = QString::fromUtf8(autotestsCMake.readAll());
+
+    QVERIFY(cmakeSource.contains(QStringLiteral("function(latte_add_test _test_name)")));
+    QVERIFY(cmakeSource.contains(QStringLiteral("add_test(NAME ${_test_name} COMMAND ${_test_name})")));
+    QVERIFY(cmakeSource.contains(QStringLiteral("list(APPEND latte_autotest_targets ${_test_name})")));
+    QVERIFY(cmakeSource.contains(QStringLiteral("set(latte_autotest_targets ${latte_autotest_targets} PARENT_SCOPE)")));
+    QVERIFY(cmakeSource.contains(QStringLiteral("set(latte_autotest_targets)")));
+    QVERIFY(cmakeSource.contains(QStringLiteral("latte_add_test(dataunittest)")));
+    QVERIFY(cmakeSource.contains(QStringLiteral("latte_add_test(modelunittest)")));
+    QVERIFY(cmakeSource.contains(QStringLiteral("latte_add_offscreen_test(qmlsmoketest)")));
+    QVERIFY(cmakeSource.contains(QStringLiteral("DEPENDS ${latte_autotest_targets}")));
+    QVERIFY(!cmakeSource.contains(QStringLiteral("add_test(NAME dataunittest COMMAND dataunittest)")));
+    QVERIFY(!cmakeSource.contains(QStringLiteral("set(latte_autotest_targets\n    dataunittest")));
 }
 
 QTEST_MAIN(SourceContractTest)

@@ -1,5 +1,14 @@
-function(latte_add_offscreen_test _test_name)
+set(latte_autotest_targets)
+
+function(latte_add_test _test_name)
     add_test(NAME ${_test_name} COMMAND ${_test_name})
+    list(APPEND latte_autotest_targets ${_test_name})
+    set(latte_autotest_targets ${latte_autotest_targets} PARENT_SCOPE)
+endfunction()
+
+function(latte_add_offscreen_test _test_name)
+    latte_add_test(${_test_name})
+    set(latte_autotest_targets ${latte_autotest_targets} PARENT_SCOPE)
     set_tests_properties(${_test_name} PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endfunction()
 
@@ -41,7 +50,7 @@ target_link_libraries(dataunittest
     Plasma::Plasma
 )
 
-add_test(NAME dataunittest COMMAND dataunittest)
+latte_add_test(dataunittest)
 
 set(modelunittest_SRCS
     modelunittest.cpp
@@ -81,7 +90,7 @@ target_link_libraries(modelunittest
     Plasma::Plasma
 )
 
-add_test(NAME modelunittest COMMAND modelunittest)
+latte_add_test(modelunittest)
 
 set(coreunittest_SRCS
     coreunittest.cpp
@@ -246,7 +255,7 @@ target_link_libraries(typesunittest
     Qt6::Test
 )
 
-add_test(NAME typesunittest COMMAND typesunittest)
+latte_add_test(typesunittest)
 
 find_package(PlasmaActivitiesStats REQUIRED)
 
@@ -274,7 +283,7 @@ target_link_libraries(taskpluginunittest
     Plasma::Plasma
 )
 
-add_test(NAME taskpluginunittest COMMAND taskpluginunittest)
+latte_add_test(taskpluginunittest)
 
 set(packageunittest_SRCS
     packageunittest.cpp
@@ -299,7 +308,7 @@ target_link_libraries(packageunittest
     KF6::Package
 )
 
-add_test(NAME packageunittest COMMAND packageunittest)
+latte_add_test(packageunittest)
 set_tests_properties(packageunittest PROPERTIES ENVIRONMENT "QT_PLUGIN_PATH=${CMAKE_BINARY_DIR}/bin")
 
 set(indicatorunittest_SRCS
@@ -349,7 +358,7 @@ target_link_libraries(layoutunittest
     Plasma::Plasma
 )
 
-add_test(NAME layoutunittest COMMAND layoutunittest)
+latte_add_test(layoutunittest)
 
 set(launcherunittest_SRCS
     launcherunittest.cpp
@@ -425,7 +434,7 @@ target_link_libraries(schemecolorsunittest
     Plasma::Plasma
 )
 
-add_test(NAME schemecolorsunittest COMMAND schemecolorsunittest)
+latte_add_test(schemecolorsunittest)
 
 set(wmunittest_SRCS
     wmunittest.cpp
@@ -542,7 +551,7 @@ target_link_libraries(knscompatunittest
     Qt6::Test
 )
 
-add_test(NAME knscompatunittest COMMAND knscompatunittest)
+latte_add_test(knscompatunittest)
 
 set(interfacesunittest_SRCS
     interfacesunittest.cpp
@@ -563,7 +572,7 @@ target_link_libraries(interfacesunittest
     Plasma::PlasmaQuick
 )
 
-add_test(NAME interfacesunittest COMMAND interfacesunittest)
+latte_add_test(interfacesunittest)
 
 
 set(viewpartunittest_SRCS
@@ -592,7 +601,7 @@ target_link_libraries(viewpartunittest
     Plasma::PlasmaQuick
 )
 
-add_test(NAME viewpartunittest COMMAND viewpartunittest)
+latte_add_test(viewpartunittest)
 
 set(panelshadowunittest_SRCS
     panelshadowunittest.cpp
@@ -662,7 +671,7 @@ target_link_libraries(shortcutunittest
     KF6::GuiAddons
 )
 
-add_test(NAME shortcutunittest COMMAND shortcutunittest)
+latte_add_test(shortcutunittest)
 
 set(declarativecoreunittest_SRCS
     declarativecoreunittest.cpp
@@ -744,7 +753,7 @@ target_link_libraries(pluginregistrationunittest
     Plasma::PlasmaQuick
 )
 
-add_test(NAME pluginregistrationunittest COMMAND pluginregistrationunittest)
+latte_add_test(pluginregistrationunittest)
 
 
 set(plasmaextendedunittest_SRCS
@@ -767,7 +776,7 @@ target_link_libraries(plasmaextendedunittest
     Plasma::Plasma
 )
 
-add_test(NAME plasmaextendedunittest COMMAND plasmaextendedunittest)
+latte_add_test(plasmaextendedunittest)
 
 
 
@@ -797,7 +806,7 @@ target_link_libraries(taskspluginunittest
     Plasma::PlasmaQuick
 )
 
-add_test(NAME taskspluginunittest COMMAND taskspluginunittest)
+latte_add_test(taskspluginunittest)
 
 
 set(containmentactionmenuunittest_SRCS
@@ -853,39 +862,6 @@ target_link_libraries(settingsviewunittest
 )
 
 latte_add_offscreen_test(settingsviewunittest)
-
-set(latte_autotest_targets
-    dataunittest
-    modelunittest
-    coreunittest
-    corecomponentstest
-    qmlsmoketest
-    sourcecontracttest
-    packagingcontracttest
-    typesunittest
-    taskpluginunittest
-    packageunittest
-    indicatorunittest
-    layoutunittest
-    launcherunittest
-    genericsettingstest
-    schemecolorsunittest
-    wmunittest
-    toolsunittest
-    knscompatunittest
-    interfacesunittest
-    viewpartunittest
-    panelshadowunittest
-    contextmenuunittest
-    shortcutunittest
-    declarativecoreunittest
-    containmentlayoutunittest
-    pluginregistrationunittest
-    plasmaextendedunittest
-    taskspluginunittest
-    containmentactionmenuunittest
-    settingsviewunittest
-)
 
 add_custom_target(latte-autotests
     DEPENDS ${latte_autotest_targets}
