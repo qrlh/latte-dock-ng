@@ -4,6 +4,7 @@
 */
 
 #include <QQmlComponent>
+#include <QQmlContext>
 #include <QQmlEngine>
 
 #include <QDir>
@@ -19,6 +20,62 @@ class QmlSmokeTest : public QObject
 
 private Q_SLOTS:
     void latteCoreQmlPluginLoadsFromBuildTree();
+    void restoreAnimationLoadsFromSource();
+};
+
+class ParabolicTargetStub : public QObject
+{
+    Q_OBJECT
+    Q_PROPERTY(qreal zoom READ zoom WRITE setZoom NOTIFY zoomChanged)
+
+public:
+    qreal zoom() const
+    {
+        return m_zoom;
+    }
+
+    void setZoom(qreal zoom)
+    {
+        if (qFuzzyCompare(m_zoom, zoom)) {
+            return;
+        }
+
+        m_zoom = zoom;
+        Q_EMIT zoomChanged();
+    }
+
+Q_SIGNALS:
+    void zoomChanged();
+
+private:
+    qreal m_zoom{1.5};
+};
+
+class AbilityItemStub : public QObject
+{
+    Q_OBJECT
+    Q_PROPERTY(QObject *parabolicItem READ parabolicItem CONSTANT)
+    Q_PROPERTY(int animationTime READ animationTime CONSTANT)
+
+public:
+    explicit AbilityItemStub(QObject *parabolicItem, QObject *parent = nullptr)
+        : QObject(parent)
+        , m_parabolicItem(parabolicItem)
+    {
+    }
+
+    QObject *parabolicItem() const
+    {
+        return m_parabolicItem;
+    }
+
+    int animationTime() const
+    {
+        return 10;
+    }
+
+private:
+    QObject *m_parabolicItem{nullptr};
 };
 
 void QmlSmokeTest::latteCoreQmlPluginLoadsFromBuildTree()
@@ -60,6 +117,35 @@ QtObject {
     QVERIFY(object->property("brightness").toReal() > 0.99);
     QCOMPARE(object->property("lumina").toReal(), 0.0);
     QCOMPARE(object->property("hasCompositingProperty").toBool(), true);
+}
+
+void QmlSmokeTest::restoreAnimationLoadsFromSource()
+{
+    QQmlEngine engine;
+    QQmlContext context(engine.rootContext());
+    ParabolicTargetStub parabolicTarget;
+    AbilityItemStub abilityItem(&parabolicTarget);
+    context.setContextProperty(QStringLiteral("abilityItem"), &abilityItem);
+
+    QQmlComponent component(&engine, QUrl::fromLocalFile(QStringLiteral(LATTE_RESTORE_ANIMATION_QML)));
+    std::unique_ptr<QObject> object(component.create(&context));
+    if (!object) {
+        qWarning() << component.errors();
+    }
+
+    QVERIFY(object);
+    const auto animations = object->findChildren<QObject *>();
+    QObject *zoomAnimation = nullptr;
+    for (QObject *animation : animations) {
+        if (animation->property("property").toString() == QStringLiteral("zoom")) {
+            zoomAnimation = animation;
+            break;
+        }
+    }
+
+    QVERIFY(zoomAnimation);
+    QCOMPARE(zoomAnimation->property("target").value<QObject *>(), &parabolicTarget);
+    QCOMPARE(zoomAnimation->property("to").toReal(), 1.0);
 }
 
 QTEST_MAIN(QmlSmokeTest)

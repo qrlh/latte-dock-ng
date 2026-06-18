@@ -27,6 +27,7 @@ private Q_SLOTS:
     void itemsAlignmentConfigDefaultsToCenter();
     void appearancePaletteExposesLayoutCustomColors();
     void layoutDetailsExposeCustomColorSchemeSelector();
+    void restoreAnimationContractMovedToQmlSmokeTest();
     void autotestAggregateTargetDocumentsFullSuiteBuild();
     void coverageEstimateUsesReusableScript();
     void cmakeTargetResolutionUsesSharedHelpers();
@@ -158,14 +159,6 @@ void SourceContractTest::taskWindowDoesNotKeepStaleFrozenZoom()
 
 void SourceContractTest::parabolicAnimationRecoveryKeepsZoomStateBounded()
 {
-    QFile restoreAnimation(QStringLiteral(LATTE_SOURCE_DIR "/declarativeimports/abilities/items/basicitem/RestoreAnimation.qml"));
-    QVERIFY(restoreAnimation.open(QFile::ReadOnly));
-
-    const QString restoreSource = QString::fromUtf8(restoreAnimation.readAll());
-    QVERIFY(restoreSource.contains(QStringLiteral("target: abilityItem.parabolicItem")));
-    QVERIFY(restoreSource.contains(QStringLiteral("property: \"zoom\"")));
-    QVERIFY(restoreSource.contains(QStringLiteral("to: 1")));
-
     QFile parabolicItem(QStringLiteral(LATTE_SOURCE_DIR "/declarativeimports/abilities/items/basicitem/ParabolicItem.qml"));
     QVERIFY(parabolicItem.open(QFile::ReadOnly));
 
@@ -375,6 +368,22 @@ void SourceContractTest::layoutDetailsExposeCustomColorSchemeSelector()
     QVERIFY(handlerSource.contains(QStringLiteral("connect(m_ui->customSchemeCmb, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &DetailsHandler::onCurrentSchemeIndexChanged);")));
     QVERIFY(handlerSource.contains(QStringLiteral("QString selectedScheme = m_ui->customSchemeCmb->itemData(row, Model::Schemes::IDROLE).toString();")));
     QVERIFY(handlerSource.contains(QStringLiteral("c_data.schemeFile = file;")));
+}
+
+void SourceContractTest::restoreAnimationContractMovedToQmlSmokeTest()
+{
+    QFile qmlSmoke(QStringLiteral(LATTE_SOURCE_DIR "/autotests/qmlsmoketest.cpp"));
+    QVERIFY(qmlSmoke.open(QFile::ReadOnly));
+    const QString qmlSmokeSource = QString::fromUtf8(qmlSmoke.readAll());
+    QVERIFY(qmlSmokeSource.contains(QStringLiteral("restoreAnimationLoadsFromSource")));
+    QVERIFY(qmlSmokeSource.contains(QStringLiteral("QQmlComponent component")));
+    QVERIFY(qmlSmokeSource.contains(QStringLiteral("LATTE_RESTORE_ANIMATION_QML")));
+
+    QFile sourceContracts(QStringLiteral(LATTE_SOURCE_DIR "/autotests/sourcecontracttest.cpp"));
+    QVERIFY(sourceContracts.open(QFile::ReadOnly));
+    const QString sourceContractSource = QString::fromUtf8(sourceContracts.readAll());
+    const QString oldSourceLock = QStringLiteral("QFile ") + QStringLiteral("restoreAnimation");
+    QVERIFY(!sourceContractSource.contains(oldSourceLock));
 }
 
 void SourceContractTest::autotestAggregateTargetDocumentsFullSuiteBuild()

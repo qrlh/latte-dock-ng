@@ -193,6 +193,7 @@ target_compile_definitions(qmlsmoketest PRIVATE
     LATTE_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
     LATTE_CORE_QMLDIR="${CMAKE_SOURCE_DIR}/declarativeimports/core/qmldir"
     LATTE_CORE_PLUGIN="$<TARGET_FILE:lattecoreplugin>"
+    LATTE_RESTORE_ANIMATION_QML="${CMAKE_SOURCE_DIR}/declarativeimports/abilities/items/basicitem/RestoreAnimation.qml"
 )
 
 target_link_libraries(qmlsmoketest
