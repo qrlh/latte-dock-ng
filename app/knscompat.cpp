@@ -235,7 +235,7 @@ static QStringList splitPathList(const QString &paths)
 
     for (const QString &path : paths.split(QDir::listSeparator(), Qt::SkipEmptyParts)) {
         const QString cleaned = QDir::cleanPath(path);
-        if (!cleaned.isEmpty() && !result.contains(cleaned)) {
+        if (!cleaned.isEmpty() && QDir::isAbsolutePath(cleaned) && !result.contains(cleaned)) {
             result << cleaned;
         }
     }
@@ -317,6 +317,10 @@ static QString userLocalQmlBase(const QString &systemQmlBase)
 
 static bool writeIfChanged(const QString &path, const QString &content)
 {
+    if (QFileInfo(path).isSymLink()) {
+        QFile::remove(path);
+    }
+
     QFile f(path);
     if (f.open(QFile::ReadOnly)) {
         if (f.readAll() == content.toUtf8()) {

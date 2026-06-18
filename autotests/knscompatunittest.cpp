@@ -22,8 +22,10 @@ private Q_SLOTS:
     void firstRunWritesPatchedOverridesAndStamp();
     void optOutDoesNotWriteOverrides();
     void usesConfiguredSystemQmlRoot();
+    void ignoresRelativeConfiguredSystemQmlRoot();
     void usesConfiguredUserQmlRoot();
     void ignoresRelativeConfiguredUserQmlRoot();
+    void replacesSymlinkedPatchedFilesWithoutTouchingTarget();
     void missingSystemQmlRootDoesNotCreatePartialOverrides();
 
 private:
@@ -44,6 +46,8 @@ void KnsCompatUnitTest::cleanup()
     qunsetenv("LATTE_DISABLE_KNS_COMPAT");
     qunsetenv("LATTE_KNS_COMPAT_SYSTEM_QML_ROOTS");
     qunsetenv("LATTE_KNS_COMPAT_USER_QML_ROOT");
+    QDir(QStringLiteral("relative-system-qml")).removeRecursively();
+    QDir(QStringLiteral("relative-qml-root")).removeRecursively();
 }
 
 void KnsCompatUnitTest::isolateHomeAndData(QTemporaryDir &home, QTemporaryDir &data)
@@ -229,6 +233,29 @@ void KnsCompatUnitTest::usesConfiguredSystemQmlRoot()
              systemQml.path() + QStringLiteral("/org/kde/newstuff/Button.qml"));
 }
 
+void KnsCompatUnitTest::ignoresRelativeConfiguredSystemQmlRoot()
+{
+    QTemporaryDir home;
+    QTemporaryDir data;
+    QTemporaryDir systemQml;
+    isolateHomeAndData(home, data);
+    QVERIFY(systemQml.isValid());
+    QDir(QStringLiteral("relative-system-qml")).removeRecursively();
+    createSystemQmlRoot(QStringLiteral("relative-system-qml"));
+    createSystemQmlRoot(systemQml.path());
+    qputenv("LATTE_KNS_COMPAT_SYSTEM_QML_ROOTS",
+            QFile::encodeName(QStringLiteral("relative-system-qml") + QLatin1Char(':') + systemQml.path()));
+
+    ensureKnsCompat();
+
+    QFile linkedNewstuff(qmlRoot() + QStringLiteral("/org/kde/newstuff/Button.qml"));
+    QVERIFY(QFileInfo(linkedNewstuff).isSymLink());
+    QCOMPARE(QFileInfo(linkedNewstuff).symLinkTarget(),
+             systemQml.path() + QStringLiteral("/org/kde/newstuff/Button.qml"));
+
+    QDir(QStringLiteral("relative-system-qml")).removeRecursively();
+}
+
 void KnsCompatUnitTest::usesConfiguredUserQmlRoot()
 {
     QTemporaryDir home;
@@ -266,6 +293,41 @@ void KnsCompatUnitTest::ignoresRelativeConfiguredUserQmlRoot()
 
     QVERIFY(QFile::exists(qmlRoot() + QStringLiteral("/org/kde/kirigami/templates/qmldir")));
     QVERIFY(!QFile::exists(QStringLiteral("relative-qml-root/org/kde/kirigami/templates/qmldir")));
+}
+
+void KnsCompatUnitTest::replacesSymlinkedPatchedFilesWithoutTouchingTarget()
+{
+    QTemporaryDir home;
+    QTemporaryDir data;
+    QTemporaryDir systemQml;
+    QTemporaryDir userQml;
+    isolateHomeAndData(home, data);
+    QVERIFY(systemQml.isValid());
+    QVERIFY(userQml.isValid());
+    createSystemQmlRoot(systemQml.path());
+    qputenv("LATTE_KNS_COMPAT_SYSTEM_QML_ROOTS", QFile::encodeName(systemQml.path()));
+    qputenv("LATTE_KNS_COMPAT_USER_QML_ROOT", QFile::encodeName(userQml.path()));
+
+    const QString externalTargetPath = data.path() + QStringLiteral("/external-target.qml");
+    QFile externalTarget(externalTargetPath);
+    QVERIFY(externalTarget.open(QFile::WriteOnly | QFile::Truncate));
+    externalTarget.write("external target must stay unchanged\n");
+    externalTarget.close();
+
+    const QString drawerPath = userQml.path() + QStringLiteral("/org/kde/kirigami/templates/private/DrawerHandle.qml");
+    QVERIFY(QDir().mkpath(QFileInfo(drawerPath).absolutePath()));
+    QVERIFY(QFile::link(externalTargetPath, drawerPath));
+
+    ensureKnsCompat();
+
+    QFile drawer(drawerPath);
+    QVERIFY(drawer.open(QFile::ReadOnly));
+    QVERIFY(drawer.readAll().contains("onActiveTranslationChanged"));
+    QVERIFY(!QFileInfo(drawerPath).isSymLink());
+
+    QFile externalTargetAfter(externalTargetPath);
+    QVERIFY(externalTargetAfter.open(QFile::ReadOnly));
+    QCOMPARE(externalTargetAfter.readAll(), QByteArray("external target must stay unchanged\n"));
 }
 
 void KnsCompatUnitTest::missingSystemQmlRootDoesNotCreatePartialOverrides()
