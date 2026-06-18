@@ -173,7 +173,9 @@ SequentialAnimation{
             var frozenTask = tasksExtendedManager.getFrozenTask(taskItem.launcherUrl);
 
             if (frozenTask && frozenTask.zoom>1) {
-                taskItem.parabolicItem.zoom = frozenTask.zoom;
+                taskItem.parabolicItem.zoomLength = 1.0;
+                taskItem.parabolicItem.zoomThickness = 1.0;
+                taskItem.parabolicItem.zoom = keepFrozenZoomForCurrentTask() ? frozenTask.zoom : 1;
                 tasksExtendedManager.removeFrozenTask(taskItem.launcherUrl);
             } else {
                 taskItem.parabolicItem.zoomLength = 1.0;
@@ -189,6 +191,10 @@ SequentialAnimation{
 
     function showWindow(){
         execute();
+    }
+
+    function keepFrozenZoomForCurrentTask() {
+        return taskItem.parabolicAreaIsCurrent || taskItem.parabolicAreaContainsMouse;
     }
 
     Component.onDestruction: {

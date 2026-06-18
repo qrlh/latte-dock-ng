@@ -57,6 +57,10 @@ inline bool verticalDockTouchesBottomLengthEdge(Types::Alignment alignment, floa
 
 inline bool shouldRespectExternalPanelsForVerticalDock(Types::Alignment alignment, float maxLength, float offset)
 {
+    if (qFuzzyCompare(maxLength, 1.0f)) {
+        return true;
+    }
+
     return verticalDockTouchesTopLengthEdge(alignment, maxLength, offset)
             || verticalDockTouchesBottomLengthEdge(alignment, maxLength, offset);
 }
@@ -75,6 +79,38 @@ inline Plasma::Types::FormFactor dockFormFactorForLocation(Plasma::Types::Locati
 
     default:
         return fallback;
+    }
+}
+
+inline Types::Alignment dockAlignmentForLocation(Plasma::Types::Location location, Types::Alignment alignment)
+{
+    switch (location) {
+    case Plasma::Types::LeftEdge:
+    case Plasma::Types::RightEdge:
+        if (alignment == Types::Left) {
+            return Types::Top;
+        }
+
+        if (alignment == Types::Right) {
+            return Types::Bottom;
+        }
+
+        return alignment;
+
+    case Plasma::Types::TopEdge:
+    case Plasma::Types::BottomEdge:
+        if (alignment == Types::Top) {
+            return Types::Left;
+        }
+
+        if (alignment == Types::Bottom) {
+            return Types::Right;
+        }
+
+        return alignment;
+
+    default:
+        return alignment;
     }
 }
 

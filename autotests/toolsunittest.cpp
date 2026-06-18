@@ -29,6 +29,7 @@ private Q_SLOTS:
     void verticalDockExternalPanelGeometryKeepsScreenThicknessAxis();
     void screenEdgePanelGeometryFollowsEachEdge();
     void dockFormFactorFollowsEdgeLocation();
+    void dockAlignmentFollowsEdgeLocation();
 };
 
 namespace {
@@ -218,6 +219,7 @@ void ToolsUnitTest::verticalDockExternalPanelAvoidancePolicy()
     QVERIFY(shouldRespectExternalPanelsForVerticalDock(Latte::Types::Top, 0.5f, 0.0f));
     QVERIFY(shouldRespectExternalPanelsForVerticalDock(Latte::Types::Bottom, 0.5f, 0.0f));
     QVERIFY(shouldRespectExternalPanelsForVerticalDock(Latte::Types::Justify, 1.0f, 0.0f));
+    QVERIFY(shouldRespectExternalPanelsForVerticalDock(Latte::Types::Center, 1.0f, 0.0f));
 
     QVERIFY(!shouldRespectExternalPanelsForVerticalDock(Latte::Types::Center, 0.5f, 0.0f));
     QVERIFY(!shouldRespectExternalPanelsForVerticalDock(Latte::Types::Top, 0.5f, 0.1f));
@@ -229,6 +231,10 @@ void ToolsUnitTest::verticalDockExternalPanelAvoidancePolicy()
     QVERIFY(verticalDockTouchesBottomLengthEdge(Latte::Types::Bottom, 0.5f, 0.0f));
     QVERIFY(verticalDockTouchesTopLengthEdge(Latte::Types::Justify, 1.0f, 0.0f));
     QVERIFY(verticalDockTouchesBottomLengthEdge(Latte::Types::Justify, 1.0f, 0.0f));
+    QVERIFY(!verticalDockTouchesTopLengthEdge(Latte::Types::Center, 1.0f, 0.0f));
+    QVERIFY(!verticalDockTouchesBottomLengthEdge(Latte::Types::Center, 1.0f, 0.0f));
+    QVERIFY(!verticalDockTouchesBottomLengthEdge(Latte::Types::Top, 1.0f, 0.0f));
+    QVERIFY(!verticalDockTouchesTopLengthEdge(Latte::Types::Bottom, 1.0f, 0.0f));
 }
 
 void ToolsUnitTest::verticalDockExternalPanelGeometryKeepsScreenThicknessAxis()
@@ -288,6 +294,25 @@ void ToolsUnitTest::dockFormFactorFollowsEdgeLocation()
 
     QCOMPARE(dockFormFactorForLocation(Plasma::Types::Desktop, Plasma::Types::Vertical),
              Plasma::Types::Vertical);
+}
+
+void ToolsUnitTest::dockAlignmentFollowsEdgeLocation()
+{
+    using Latte::ViewPart::dockAlignmentForLocation;
+
+    QCOMPARE(static_cast<int>(dockAlignmentForLocation(Plasma::Types::LeftEdge, Latte::Types::Left)), static_cast<int>(Latte::Types::Top));
+    QCOMPARE(static_cast<int>(dockAlignmentForLocation(Plasma::Types::LeftEdge, Latte::Types::Right)), static_cast<int>(Latte::Types::Bottom));
+    QCOMPARE(static_cast<int>(dockAlignmentForLocation(Plasma::Types::RightEdge, Latte::Types::Left)), static_cast<int>(Latte::Types::Top));
+    QCOMPARE(static_cast<int>(dockAlignmentForLocation(Plasma::Types::RightEdge, Latte::Types::Right)), static_cast<int>(Latte::Types::Bottom));
+
+    QCOMPARE(static_cast<int>(dockAlignmentForLocation(Plasma::Types::TopEdge, Latte::Types::Top)), static_cast<int>(Latte::Types::Left));
+    QCOMPARE(static_cast<int>(dockAlignmentForLocation(Plasma::Types::TopEdge, Latte::Types::Bottom)), static_cast<int>(Latte::Types::Right));
+    QCOMPARE(static_cast<int>(dockAlignmentForLocation(Plasma::Types::BottomEdge, Latte::Types::Top)), static_cast<int>(Latte::Types::Left));
+    QCOMPARE(static_cast<int>(dockAlignmentForLocation(Plasma::Types::BottomEdge, Latte::Types::Bottom)), static_cast<int>(Latte::Types::Right));
+
+    QCOMPARE(static_cast<int>(dockAlignmentForLocation(Plasma::Types::LeftEdge, Latte::Types::Center)), static_cast<int>(Latte::Types::Center));
+    QCOMPARE(static_cast<int>(dockAlignmentForLocation(Plasma::Types::BottomEdge, Latte::Types::Justify)), static_cast<int>(Latte::Types::Justify));
+    QCOMPARE(static_cast<int>(dockAlignmentForLocation(Plasma::Types::Desktop, Latte::Types::Right)), static_cast<int>(Latte::Types::Right));
 }
 
 QTEST_MAIN(ToolsUnitTest)

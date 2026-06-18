@@ -23,6 +23,8 @@ private Q_SLOTS:
     void applicationLauncherUsesFixedExternalSlot();
     void latteTasksExposesPlasmaLauncherApi();
     void latteDockDbusExportsLauncherApi();
+    void containmentClearsParabolicStateWhenEdgeChanges();
+    void taskWindowDoesNotKeepStaleFrozenZoom();
 };
 
 void QmlSmokeTest::latteCoreQmlPluginLoadsFromBuildTree()
@@ -160,6 +162,28 @@ void QmlSmokeTest::latteDockDbusExportsLauncherApi()
     QVERIFY(header.contains(QStringLiteral("bool hasLauncher(QString launcherUrl, QString screenName);")));
     QVERIFY(header.contains(QStringLiteral("bool addLauncher(QString launcherUrl, QString screenName);")));
     QVERIFY(header.contains(QStringLiteral("bool removeLauncher(QString launcherUrl, QString screenName);")));
+}
+
+void QmlSmokeTest::containmentClearsParabolicStateWhenEdgeChanges()
+{
+    QFile containment(QStringLiteral(LATTE_SOURCE_DIR "/containment/package/contents/ui/main.qml"));
+    QVERIFY(containment.open(QFile::ReadOnly));
+
+    const QString source = QString::fromUtf8(containment.readAll());
+    QVERIFY(source.contains(QStringLiteral("function onLocationChanged() {\n            root.resetModernParabolicOffsets();")));
+    QVERIFY(source.contains(QStringLiteral("function onFormFactorChanged() {\n            root.resetModernParabolicOffsets();")));
+    QVERIFY(source.contains(QStringLiteral("function onShowingAfterRelocationFinished() {\n            root.resetModernParabolicOffsets();")));
+}
+
+void QmlSmokeTest::taskWindowDoesNotKeepStaleFrozenZoom()
+{
+    QFile showWindowAnimation(QStringLiteral(LATTE_SOURCE_DIR "/plasmoid/package/contents/ui/task/animations/ShowWindowAnimation.qml"));
+    QVERIFY(showWindowAnimation.open(QFile::ReadOnly));
+
+    const QString source = QString::fromUtf8(showWindowAnimation.readAll());
+    QVERIFY(source.contains(QStringLiteral("function keepFrozenZoomForCurrentTask()")));
+    QVERIFY(source.contains(QStringLiteral("taskItem.parabolicAreaIsCurrent || taskItem.parabolicAreaContainsMouse")));
+    QVERIFY(source.contains(QStringLiteral("taskItem.parabolicItem.zoom = keepFrozenZoomForCurrentTask() ? frozenTask.zoom : 1;")));
 }
 
 QTEST_MAIN(QmlSmokeTest)

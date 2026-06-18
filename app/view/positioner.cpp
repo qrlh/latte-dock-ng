@@ -1005,12 +1005,22 @@ void Positioner::initSignalingForLocationChangeSliding()
 
         //! SCREEN_EDGE
         if (m_nextScreenEdge != Plasma::Types::Floating) {
+            const Types::Alignment requestedAlignment = m_nextAlignment != Latte::Types::NoneAlignment
+                    ? m_nextAlignment
+                    : static_cast<Types::Alignment>(m_view->alignment());
+            const Types::Alignment edgeAlignment = dockAlignmentForLocation(m_nextScreenEdge, requestedAlignment);
+            if (edgeAlignment != m_view->alignment()) {
+                m_view->setAlignment(edgeAlignment);
+            }
+
+            m_nextAlignment = Latte::Types::NoneAlignment;
             m_view->setLocation(m_nextScreenEdge);
         }
 
         //! ALIGNMENT
         if (m_nextAlignment != Latte::Types::NoneAlignment && m_nextAlignment != m_view->alignment()) {
-            m_view->setAlignment(m_nextAlignment);
+            const Types::Alignment edgeAlignment = dockAlignmentForLocation(effectiveLocationForView(m_view), m_nextAlignment);
+            m_view->setAlignment(edgeAlignment);
             m_nextAlignment = Latte::Types::NoneAlignment;
         }
 

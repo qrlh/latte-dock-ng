@@ -618,9 +618,11 @@ ContainmentItem {
     Connections {
         target: plasmoid
         function onLocationChanged() {
+            root.resetModernParabolicOffsets();
             repairAppletContainersTimer.restart();
         }
         function onFormFactorChanged() {
+            root.resetModernParabolicOffsets();
             repairAppletContainersTimer.restart();
         }
     }
@@ -628,6 +630,7 @@ ContainmentItem {
     Connections {
         target: latteView && latteView.positioner ? latteView.positioner : null
         function onShowingAfterRelocationFinished() {
+            root.resetModernParabolicOffsets();
             repairAppletContainersTimer.restart();
         }
     }
