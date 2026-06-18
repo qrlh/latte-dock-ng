@@ -15,6 +15,7 @@ class TypesUnitTest : public QObject
 
 private Q_SLOTS:
     void containmentEnumsExposeExpectedKeys();
+    void containmentThemeColorEnumValuesRemainConfigStable();
     void taskEnumsExposeExpectedKeys();
 };
 
@@ -31,6 +32,16 @@ void TypesUnitTest::containmentEnumsExposeExpectedKeys()
     const QMetaEnum windowColors = QMetaEnum::fromType<Latte::Containment::Types::WindowColorsGroup>();
     QCOMPARE(QString::fromLatin1(windowColors.valueToKey(Latte::Containment::Types::TouchingWindowColors)),
              QStringLiteral("TouchingWindowColors"));
+}
+
+void TypesUnitTest::containmentThemeColorEnumValuesRemainConfigStable()
+{
+    QCOMPARE(static_cast<int>(Latte::Containment::Types::PlasmaThemeColors), 0);
+    QCOMPARE(static_cast<int>(Latte::Containment::Types::ReverseThemeColors), 1);
+    QCOMPARE(static_cast<int>(Latte::Containment::Types::SmartThemeColors), 2);
+    QCOMPARE(static_cast<int>(Latte::Containment::Types::DarkThemeColors), 3);
+    QCOMPARE(static_cast<int>(Latte::Containment::Types::LightThemeColors), 4);
+    QCOMPARE(static_cast<int>(Latte::Containment::Types::LayoutThemeColors), 5);
 }
 
 void TypesUnitTest::taskEnumsExposeExpectedKeys()
