@@ -1,0 +1,47 @@
+# SPDX-FileCopyrightText: 2026 Ruizhi Zhong <ruizhi.zhong88@gmail.com>
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+function(latte_resolve_target_from_candidates _out_var)
+    foreach(_candidate IN LISTS ARGN)
+        if(TARGET ${_candidate})
+            set(${_out_var} ${_candidate} PARENT_SCOPE)
+            return()
+        endif()
+    endforeach()
+endfunction()
+
+function(latte_resolve_library_variable _out_var)
+    foreach(_var IN LISTS ARGN)
+        if(DEFINED ${_var} AND NOT "${${_var}}" STREQUAL "")
+            string(TOLOWER "${${_var}}" _candidate_lc)
+            if(_candidate_lc MATCHES "_location$")
+                continue()
+            endif()
+
+            set(${_out_var} "${${_var}}" PARENT_SCOPE)
+            return()
+        endif()
+    endforeach()
+endfunction()
+
+function(latte_resolve_imported_target _out_var _primary_pattern)
+    foreach(_target IN LISTS _latte_imported_targets)
+        string(TOLOWER "${_target}" _target_lc)
+        if(NOT _target_lc MATCHES "${_primary_pattern}")
+            continue()
+        endif()
+
+        set(_matches_extra_patterns TRUE)
+        foreach(_extra_pattern IN LISTS ARGN)
+            if(NOT _target_lc MATCHES "${_extra_pattern}")
+                set(_matches_extra_patterns FALSE)
+                break()
+            endif()
+        endforeach()
+
+        if(_matches_extra_patterns)
+            set(${_out_var} ${_target} PARENT_SCOPE)
+            return()
+        endif()
+    endforeach()
+endfunction()

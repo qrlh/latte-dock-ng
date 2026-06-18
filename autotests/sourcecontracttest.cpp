@@ -31,6 +31,7 @@ private Q_SLOTS:
     void coverageEstimateUsesReusableScript();
     void cmakeTargetResolutionUsesSharedHelpers();
     void cmakeImportedTargetResolutionUsesSharedHelper();
+    void cmakeTargetResolutionHelpersLiveInModule();
 };
 
 void SourceContractTest::pulseAudioBootstrapIsBounded()
@@ -408,12 +409,16 @@ void SourceContractTest::coverageEstimateUsesReusableScript()
 
 void SourceContractTest::cmakeTargetResolutionUsesSharedHelpers()
 {
+    QFile module(QStringLiteral(LATTE_SOURCE_DIR "/cmake/LatteTargetResolution.cmake"));
+    QVERIFY(module.open(QFile::ReadOnly));
+    const QString moduleSource = QString::fromUtf8(module.readAll());
+
     QFile cmake(QStringLiteral(LATTE_SOURCE_DIR "/CMakeLists.txt"));
     QVERIFY(cmake.open(QFile::ReadOnly));
     const QString cmakeSource = QString::fromUtf8(cmake.readAll());
 
-    QVERIFY(cmakeSource.contains(QStringLiteral("function(latte_resolve_target_from_candidates")));
-    QVERIFY(cmakeSource.contains(QStringLiteral("function(latte_resolve_library_variable")));
+    QVERIFY(moduleSource.contains(QStringLiteral("function(latte_resolve_target_from_candidates")));
+    QVERIFY(moduleSource.contains(QStringLiteral("function(latte_resolve_library_variable")));
     QVERIFY(cmakeSource.contains(QStringLiteral("latte_resolve_target_from_candidates(LATTE_NEWSTUFF_TARGET")));
     QVERIFY(cmakeSource.contains(QStringLiteral("latte_resolve_library_variable(LATTE_NEWSTUFF_TARGET")));
     QVERIFY(cmakeSource.contains(QStringLiteral("latte_resolve_target_from_candidates(LATTE_WAYLANDCLIENT_TARGET")));
@@ -422,16 +427,38 @@ void SourceContractTest::cmakeTargetResolutionUsesSharedHelpers()
 
 void SourceContractTest::cmakeImportedTargetResolutionUsesSharedHelper()
 {
+    QFile module(QStringLiteral(LATTE_SOURCE_DIR "/cmake/LatteTargetResolution.cmake"));
+    QVERIFY(module.open(QFile::ReadOnly));
+    const QString moduleSource = QString::fromUtf8(module.readAll());
+
     QFile cmake(QStringLiteral(LATTE_SOURCE_DIR "/CMakeLists.txt"));
     QVERIFY(cmake.open(QFile::ReadOnly));
     const QString cmakeSource = QString::fromUtf8(cmake.readAll());
 
-    QVERIFY(cmakeSource.contains(QStringLiteral("function(latte_resolve_imported_target")));
+    QVERIFY(moduleSource.contains(QStringLiteral("function(latte_resolve_imported_target")));
     QVERIFY(cmakeSource.contains(QStringLiteral("latte_resolve_imported_target(LATTE_NEWSTUFF_TARGET \"newstuff\" \"widget\")")));
     QVERIFY(cmakeSource.contains(QStringLiteral("latte_resolve_imported_target(LATTE_NEWSTUFF_TARGET \"newstuff\")")));
     QVERIFY(cmakeSource.contains(QStringLiteral("latte_resolve_imported_target(LATTE_WAYLANDCLIENT_TARGET \"waylandclient|kwayland::client\")")));
     QVERIFY(cmakeSource.contains(QStringLiteral("latte_resolve_imported_target(LATTE_CONFIGQML_TARGET \"configqml\")")));
     QVERIFY(cmakeSource.contains(QStringLiteral("latte_resolve_imported_target(LATTE_SVG_TARGET \"::svg|ksvg\")")));
+}
+
+void SourceContractTest::cmakeTargetResolutionHelpersLiveInModule()
+{
+    QFile module(QStringLiteral(LATTE_SOURCE_DIR "/cmake/LatteTargetResolution.cmake"));
+    QVERIFY(module.open(QFile::ReadOnly));
+    const QString moduleSource = QString::fromUtf8(module.readAll());
+    QVERIFY(moduleSource.contains(QStringLiteral("function(latte_resolve_target_from_candidates")));
+    QVERIFY(moduleSource.contains(QStringLiteral("function(latte_resolve_library_variable")));
+    QVERIFY(moduleSource.contains(QStringLiteral("function(latte_resolve_imported_target")));
+
+    QFile cmake(QStringLiteral(LATTE_SOURCE_DIR "/CMakeLists.txt"));
+    QVERIFY(cmake.open(QFile::ReadOnly));
+    const QString cmakeSource = QString::fromUtf8(cmake.readAll());
+    QVERIFY(cmakeSource.contains(QStringLiteral("include(LatteTargetResolution)")));
+    QVERIFY(!cmakeSource.contains(QStringLiteral("function(latte_resolve_target_from_candidates")));
+    QVERIFY(!cmakeSource.contains(QStringLiteral("function(latte_resolve_library_variable")));
+    QVERIFY(!cmakeSource.contains(QStringLiteral("function(latte_resolve_imported_target")));
 }
 
 QTEST_MAIN(SourceContractTest)
