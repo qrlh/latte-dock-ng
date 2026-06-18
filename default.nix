@@ -6,7 +6,7 @@ let
 in
 stdenv.mkDerivation {
   pname = "latte-dock-ng";
-  version = "1.1.1";
+  version = "1.2.3";
 
   src = ./.;
 
@@ -23,12 +23,15 @@ stdenv.mkDerivation {
 
     kdePackages.libplasma
     kdePackages.plasma-activities
+    kdePackages.plasma-activities-stats
     kdePackages.plasma-workspace
     kdePackages.kwayland
     kdePackages.plasma-wayland-protocols
+    kdePackages.layer-shell-qt
     wayland
 
     kdePackages.karchive
+    kdePackages.kcmutils
     kdePackages.kconfig
     kdePackages.kcoreaddons
     kdePackages.kcrash
@@ -39,6 +42,7 @@ stdenv.mkDerivation {
     kdePackages.ki18n
     kdePackages.kiconthemes
     kdePackages.kio
+    kdePackages.kirigami
     kdePackages.knewstuff
     kdePackages.knotifications
     kdePackages.kpackage

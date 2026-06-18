@@ -18,6 +18,7 @@ preclean_install="true"
 purge_user_data="false"
 install_mode="auto"   # auto | user | system
 build_jobs=""         # empty = auto-detect from available memory
+build_dir_override="${LATTE_BUILD_DIR:-}"
 
 # Auto-detect parallel jobs based on available memory (each job needs ~2GB)
 detect_build_jobs() {
@@ -78,6 +79,7 @@ Build options:
   --translations | --translations-stable
   --clean | --no-clean      (default: --clean)
   --purge-user-data         Wipe user config/cache on clean
+  --build-dir <path>        Build outside the source tree (or set LATTE_BUILD_DIR)
   --jobs N | -jN | --jobs=N Cap parallel compile jobs (default: auto-detect from memory).
                             Use a small value on memory-constrained hosts to
                             avoid OOM (each clang/g++ peaks at 1-2 GiB).
@@ -86,6 +88,7 @@ Examples:
   bash install.sh                 # auto: user if no root, system if root
   bash install.sh Debug           # same, Debug build
   bash install.sh --user Debug    # always user-local
+  bash install.sh --build-dir /tmp/latte-build
   bash install.sh --user --jobs 2 # cap at 2 parallel compile jobs
   sudo bash install.sh            # system install
   sudo bash install.sh --system   # explicit system install
@@ -110,6 +113,12 @@ while (($# > 0)); do
         --purge-user-data)    purge_user_data="true" ;;
         --translations)       l10n_auto_translations="ON"; l10n_branch="trunk" ;;
         --translations-stable) l10n_auto_translations="ON"; l10n_branch="stable" ;;
+        --build-dir)
+            shift
+            (($# > 0)) || { echo "Error: --build-dir requires a path." >&2; exit 2; }
+            build_dir_override="$1" ;;
+        --build-dir=*)
+            build_dir_override="${arg#--build-dir=}" ;;
         --jobs)
             shift
             (($# > 0)) || { echo "Error: --jobs requires a value." >&2; exit 2; }
@@ -149,7 +158,8 @@ if [[ "$install_mode" == "user" ]]; then
     install_prefix="${HOME}/.local"
     build_dir="${script_dir}/build-user-${USER:-user}"
 
-    # Detect Qt QML lib subdir (lib vs lib64) by querying the system path
+    # Detect the Qt QML relative path (lib, lib64, or Debian multiarch) by
+    # querying the system path and mirroring it under ~/.local.
     sys_qml_dir=""
     if command -v qtpaths6 >/dev/null 2>&1; then
         sys_qml_dir="$(qtpaths6 --query QT_INSTALL_QML 2>/dev/null || true)"
@@ -157,16 +167,19 @@ if [[ "$install_mode" == "user" ]]; then
     if [[ -z "$sys_qml_dir" ]] && command -v qtpaths >/dev/null 2>&1; then
         sys_qml_dir="$(qtpaths --query QT_INSTALL_QML 2>/dev/null || true)"
     fi
-    # Extract the lib* component (e.g. "lib64" from "/usr/lib64/qt6/qml")
+    qml_relative_dir=""
     if [[ -n "$sys_qml_dir" ]]; then
-        qml_lib_name="$(echo "$sys_qml_dir" | sed -n 's|.*/\(lib[0-9]*\)/qt6/.*|\1|p')"
-        [[ -z "$qml_lib_name" ]] && qml_lib_name="lib"
-    else
-        qml_lib_name="lib"
-        # Fall back: check which lib64 or lib exists on the system
-        [[ -d "/usr/lib64/qt6" ]] && qml_lib_name="lib64"
+        case "$sys_qml_dir" in
+            /usr/local/*) qml_relative_dir="${sys_qml_dir#/usr/local/}" ;;
+            /usr/*)       qml_relative_dir="${sys_qml_dir#/usr/}" ;;
+        esac
     fi
-    kde_install_qmldir="${install_prefix}/${qml_lib_name}/qt6/qml"
+    if [[ -z "$qml_relative_dir" ]]; then
+        qml_relative_dir="lib/qt6/qml"
+        [[ -d "/usr/lib64/qt6" ]] && qml_relative_dir="lib64/qt6/qml"
+        [[ -d "/usr/lib/x86_64-linux-gnu/qt6" ]] && qml_relative_dir="lib/x86_64-linux-gnu/qt6/qml"
+    fi
+    kde_install_qmldir="${install_prefix}/${qml_relative_dir}"
 
     sudo_cmd=()   # Never need sudo for user-local install
 else
@@ -180,16 +193,23 @@ else
         sudo_cmd=()
     fi
 
+fi
+
+if [[ -n "$build_dir_override" ]]; then
+    build_dir="$build_dir_override"
+    echo "Info: build directory = ${build_dir}"
+elif [[ "$install_mode" == "system" && -d "$build_dir" && ! -w "$build_dir" ]]; then
     # If the default build dir isn't writable (built by another user), use a personal one
-    if [[ -d "$build_dir" && ! -w "$build_dir" ]]; then
-        build_dir="${script_dir}/build-${USER:-user}"
-        echo "Info: '${script_dir}/build' is not writable, using '${build_dir}'."
-    fi
+    build_dir="${script_dir}/build-${USER:-user}"
+    echo "Info: '${script_dir}/build' is not writable, using '${build_dir}'."
 fi
 
 # ── Pre-install cleanup ───────────────────────────────────────────────────────
 if [[ "$preclean_install" == "true" ]]; then
     uninstall_cmd=(bash "${script_dir}/uninstall.sh" "--${install_mode}")
+    if [[ -f "${build_dir}/install_manifest.txt" ]]; then
+        uninstall_cmd+=(--manifest "${build_dir}/install_manifest.txt")
+    fi
     # Never purge user data by default during pre-clean (updating should not
     # delete user config).  Only purge when the user explicitly requests it.
     if [[ "$purge_user_data" == "true" ]]; then
@@ -223,7 +243,7 @@ else
     cmake_args+=(-DKDE_L10N_AUTO_TRANSLATIONS=OFF)
 fi
 
-cmake "${cmake_args[@]}" ..
+cmake "${cmake_args[@]}" "${script_dir}"
 
 [[ "$l10n_auto_translations" == "ON" ]] && cmake --build . --target fetch-translations
 

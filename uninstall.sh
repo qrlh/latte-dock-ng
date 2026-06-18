@@ -380,7 +380,12 @@ done
 
 # ── Remove QML plugins ────────────────────────────────────────────────────────
 if [[ "$install_mode" == "user" ]]; then
-    qml_dirs=("$kde_install_qmldir")
+    qml_dirs=(
+        "$kde_install_qmldir"
+        "${install_prefix}/lib64/qt6/qml"
+        "${install_prefix}/lib/qt6/qml"
+        "${install_prefix}/lib/x86_64-linux-gnu/qt6/qml"
+    )
 else
     qml_dirs=(
         "/usr/lib64/qt6/qml"
@@ -433,6 +438,7 @@ if [[ "$install_mode" == "system" ]]; then
         "/usr/local/lib64/plugins/plasma/containmentactions"
     )
     for plugin_dir in "${plugin_dirs[@]}"; do
+        remove_file "${plugin_dir}/org.kde.latte.contextmenu.so"
         remove_file "${plugin_dir}/plasma_containmentactions_lattecontextmenu.so"
     done
 fi

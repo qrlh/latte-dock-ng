@@ -16,5 +16,5 @@ RUN pacman -Syu --noconfirm && \
       knewstuff karchive kpackage kglobalaccel kcrash kwindowsystem ksvg \
       plasma-wayland-protocols wayland \
       layer-shell-qt \
-      gcc make gettext git pkgconf && \
+      gcc make gettext git pkgconf zstd && \
     pacman -Scc --noconfirm

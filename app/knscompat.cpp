@@ -292,6 +292,21 @@ static QString resolvedSystemQmlBase()
     return QString();
 }
 
+static QString userLocalQmlBase(const QString &systemQmlBase)
+{
+    const QString userLocalPrefix = QDir::homePath() + QStringLiteral("/.local");
+
+    if (systemQmlBase.startsWith(QStringLiteral("/usr/local/"))) {
+        return QDir::cleanPath(userLocalPrefix + QLatin1Char('/') + systemQmlBase.mid(11));
+    }
+
+    if (systemQmlBase.startsWith(QStringLiteral("/usr/"))) {
+        return QDir::cleanPath(userLocalPrefix + QLatin1Char('/') + systemQmlBase.mid(5));
+    }
+
+    return userLocalPrefix + QStringLiteral("/lib64/qt6/qml");
+}
+
 static bool writeIfChanged(const QString &path, const QString &content)
 {
     QFile f(path);
@@ -454,7 +469,13 @@ void ensureKnsCompat()
     // Check if we need to re-create the overrides
     bool needsUpdate = (currentVersion < kCompatVersion);
 
-    const QString qmlBase = QDir::homePath() + QStringLiteral("/.local/lib64/qt6/qml");
+    const QString systemQmlBase = resolvedSystemQmlBase();
+    if (systemQmlBase.isEmpty()) {
+        qWarning() << "KnsCompat: system QML root not found, compatibility overrides were not created";
+        return;
+    }
+
+    const QString qmlBase = userLocalQmlBase(systemQmlBase);
     const QString templatesDir = qmlBase + QStringLiteral("/org/kde/kirigami/templates");
     const QString newstuffDir = qmlBase + QStringLiteral("/org/kde/newstuff");
     const QString controlsDir = qmlBase + QStringLiteral("/org/kde/kirigami/controls");
@@ -462,12 +483,6 @@ void ensureKnsCompat()
     if (!needsUpdate && QFile::exists(templatesDir + QStringLiteral("/qmldir"))
         && QFile::exists(newstuffDir + QStringLiteral("/qmldir"))
         && QFile::exists(controlsDir + QStringLiteral("/qmldir"))) {
-        return;
-    }
-
-    const QString systemQmlBase = resolvedSystemQmlBase();
-    if (systemQmlBase.isEmpty()) {
-        qWarning() << "KnsCompat: system QML root not found, compatibility overrides were not created";
         return;
     }
 

@@ -32,6 +32,7 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QLibraryInfo>
 #include <QLockFile>
 #include <QSessionManager>
 #include <QStandardPaths>
@@ -655,10 +656,25 @@ inline void ensureUserLocalQmlImportPaths(int argc, char **argv)
     }
 
     const QString userLocalPath = QDir::homePath() + QStringLiteral("/.local");
-    const QStringList qmlCandidates{
-        userLocalPath + QStringLiteral("/lib/qt6/qml"),
-        userLocalPath + QStringLiteral("/lib64/qt6/qml")
+    QStringList qmlCandidates;
+    const auto addQmlCandidate = [&qmlCandidates](const QString &candidate) {
+        const QString cleaned = QDir::cleanPath(candidate);
+        if (!cleaned.isEmpty() && !qmlCandidates.contains(cleaned)) {
+            qmlCandidates << cleaned;
+        }
     };
+    const auto addUserLocalForSystemQml = [&addQmlCandidate, &userLocalPath](const QString &systemQmlPath) {
+        if (systemQmlPath.startsWith(QStringLiteral("/usr/local/"))) {
+            addQmlCandidate(userLocalPath + QLatin1Char('/') + systemQmlPath.mid(11));
+        } else if (systemQmlPath.startsWith(QStringLiteral("/usr/"))) {
+            addQmlCandidate(userLocalPath + QLatin1Char('/') + systemQmlPath.mid(5));
+        }
+    };
+
+    addUserLocalForSystemQml(QLibraryInfo::path(QLibraryInfo::QmlImportsPath));
+    addQmlCandidate(userLocalPath + QStringLiteral("/lib/qt6/qml"));
+    addQmlCandidate(userLocalPath + QStringLiteral("/lib64/qt6/qml"));
+    addQmlCandidate(userLocalPath + QStringLiteral("/lib/x86_64-linux-gnu/qt6/qml"));
 
     for (const QString &candidate : qmlCandidates) {
         const QFileInfo info(candidate);
