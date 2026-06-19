@@ -12,7 +12,9 @@
 #include "../../wm/abstractwindowinterface.h"
 
 // Qt
+#include <QDir>
 #include <QProcess>
+#include <QProcessEnvironment>
 #include <QQuickItem>
 #include <QScreen>
 #include <QStandardPaths>
@@ -28,6 +30,32 @@ namespace ViewPart {
 
 constexpr int kWidgetExplorerVerticalMargin = 100;
 constexpr int kSyncGeometryDelayMs = 400;
+
+namespace {
+
+QString defaultWaylandDisplay()
+{
+    const QString runtimeDir = QString::fromLocal8Bit(qgetenv("XDG_RUNTIME_DIR"));
+
+    if (runtimeDir.isEmpty()) {
+        return QString();
+    }
+
+    const QDir dir(runtimeDir);
+    const QStringList candidates = dir.entryList({QStringLiteral("wayland-*")},
+                                                 QDir::System | QDir::Files | QDir::NoDotAndDotDot,
+                                                 QDir::Name);
+
+    for (const QString &candidate : candidates) {
+        if (!candidate.endsWith(QStringLiteral(".lock"))) {
+            return candidate;
+        }
+    }
+
+    return QString();
+}
+
+}
 
 WidgetExplorerView::WidgetExplorerView(Latte::View *view)
     : SubConfigView(view, QString("#widgetexplorerview#"), true)
@@ -86,7 +114,27 @@ bool WidgetExplorerView::openGetNewWidgetsDialog()
         return false;
     }
 
-    return QProcess::startDetached(executable, {QStringLiteral("plasmoids.knsrc")});
+    QProcess process;
+    QProcessEnvironment environment = QProcessEnvironment::systemEnvironment();
+
+    if (environment.value(QStringLiteral("WAYLAND_DISPLAY")).isEmpty()) {
+        const QString waylandDisplay = defaultWaylandDisplay();
+
+        if (!waylandDisplay.isEmpty()) {
+            environment.insert(QStringLiteral("WAYLAND_DISPLAY"), waylandDisplay);
+        }
+    }
+
+    if (environment.value(QStringLiteral("QT_QPA_PLATFORM")).isEmpty()
+            && !environment.value(QStringLiteral("WAYLAND_DISPLAY")).isEmpty()) {
+        environment.insert(QStringLiteral("QT_QPA_PLATFORM"), QStringLiteral("wayland"));
+    }
+
+    process.setProgram(executable);
+    process.setArguments({QStringLiteral("plasmoids.knsrc")});
+    process.setProcessEnvironment(environment);
+
+    return process.startDetached();
 }
 
 Qt::WindowFlags WidgetExplorerView::wFlags() const

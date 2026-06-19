@@ -181,6 +181,11 @@ PC3.Page {
             || label.indexOf("下载新") !== -1;
     }
 
+    function holdWidgetExplorerForExternalDialog() {
+        main.getNewWidgetsDialogActive = true
+        getNewWidgetsWindowHideRestoreTimer.restart()
+    }
+
     function scheduleRunningCountRefresh() {
         runningCountRevision++;
         runningCountRefreshTimer.remainingRuns = 20;
@@ -284,12 +289,12 @@ PC3.Page {
 
         onClicked: function(model) {
             if (main.shouldOpenExternalGetNewWidgetsDialog(model)) {
-                main.getNewWidgetsDialogActive = true
-                getNewWidgetsWindowHideRestoreTimer.restart()
+                main.holdWidgetExplorerForExternalDialog()
                 viewConfig.openGetNewWidgetsDialog()
                 return
             }
 
+            main.holdWidgetExplorerForExternalDialog()
             model.trigger()
         }
     }

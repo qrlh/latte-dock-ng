@@ -315,6 +315,7 @@ void SourceContractTest::widgetExplorerLaunchesKnsDialogOutOfProcess()
     QVERIFY(source.contains(QStringLiteral("id: getNewWidgetsWindowHideRestoreTimer")));
     QVERIFY(source.contains(QStringLiteral("main.getNewWidgetsDialogActive = false")));
     QVERIFY(source.contains(QStringLiteral("label.indexOf(\"添加新\") !== -1")));
+    QVERIFY(source.contains(QStringLiteral("function holdWidgetExplorerForExternalDialog()")));
     QVERIFY(source.contains(QStringLiteral("function forceClose()")));
     QVERIFY(source.contains(QStringLiteral("getNewWidgetsWindowHideRestoreTimer.stop()")));
     QVERIFY(source.contains(QStringLiteral("viewConfig.hideConfigWindow()")));
@@ -324,6 +325,7 @@ void SourceContractTest::widgetExplorerLaunchesKnsDialogOutOfProcess()
     QVERIFY(source.contains(QStringLiteral("getWidgetsDialog.open(0, getWidgetsButton.height)")));
     QVERIFY(source.contains(QStringLiteral("main.getNewWidgetsDialogActive = true")));
     QVERIFY(source.contains(QStringLiteral("getNewWidgetsWindowHideRestoreTimer.restart()")));
+    QVERIFY(source.contains(QStringLiteral("main.holdWidgetExplorerForExternalDialog()")));
     QVERIFY(source.contains(QStringLiteral("viewConfig.openGetNewWidgetsDialog()")));
     QVERIFY(source.contains(QStringLiteral("model.trigger()")));
 
@@ -331,8 +333,11 @@ void SourceContractTest::widgetExplorerLaunchesKnsDialogOutOfProcess()
     QVERIFY(getWidgetsMenu >= 0);
     const int externalDialogCall = source.indexOf(QStringLiteral("viewConfig.openGetNewWidgetsDialog()"), getWidgetsMenu);
     const int fallbackTrigger = source.indexOf(QStringLiteral("model.trigger()"), getWidgetsMenu);
+    const int fallbackHold = source.lastIndexOf(QStringLiteral("main.holdWidgetExplorerForExternalDialog()"), fallbackTrigger);
     QVERIFY(externalDialogCall > getWidgetsMenu);
     QVERIFY(fallbackTrigger > externalDialogCall);
+    QVERIFY(fallbackHold > externalDialogCall);
+    QVERIFY(fallbackHold < fallbackTrigger);
 
     QFile widgetExplorerHeader(QStringLiteral(LATTE_SOURCE_DIR "/app/view/settings/widgetexplorerview.h"));
     QVERIFY(widgetExplorerHeader.open(QFile::ReadOnly));
@@ -343,9 +348,14 @@ void SourceContractTest::widgetExplorerLaunchesKnsDialogOutOfProcess()
     QVERIFY(widgetExplorerCpp.open(QFile::ReadOnly));
     const QString cppSource = QString::fromUtf8(widgetExplorerCpp.readAll());
     QVERIFY(cppSource.contains(QStringLiteral("#include <QProcess>")));
+    QVERIFY(cppSource.contains(QStringLiteral("#include <QProcessEnvironment>")));
     QVERIFY(cppSource.contains(QStringLiteral("#include <QStandardPaths>")));
     QVERIFY(cppSource.contains(QStringLiteral("QStandardPaths::findExecutable(QStringLiteral(\"knewstuff-dialog6\"))")));
-    QVERIFY(cppSource.contains(QStringLiteral("QProcess::startDetached(executable, {QStringLiteral(\"plasmoids.knsrc\")})")));
+    QVERIFY(cppSource.contains(QStringLiteral("defaultWaylandDisplay()")));
+    QVERIFY(cppSource.contains(QStringLiteral("environment.insert(QStringLiteral(\"WAYLAND_DISPLAY\")")));
+    QVERIFY(cppSource.contains(QStringLiteral("environment.insert(QStringLiteral(\"QT_QPA_PLATFORM\"), QStringLiteral(\"wayland\"))")));
+    QVERIFY(cppSource.contains(QStringLiteral("process.setProcessEnvironment(environment)")));
+    QVERIFY(cppSource.contains(QStringLiteral("process.startDetached()")));
 }
 
 void SourceContractTest::widgetExplorerUsesPlasmaTranslationContexts()
