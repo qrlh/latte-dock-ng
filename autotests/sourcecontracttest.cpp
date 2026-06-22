@@ -214,6 +214,7 @@ void SourceContractTest::sessionShutdownHandlingMatchesStableWaylandPath()
     QVERIFY(mainSource.contains(QStringLiteral("QCoreApplication::setQuitLockEnabled(false);")));
     QVERIFY(mainSource.contains(QStringLiteral("qputenv(\"LATTE_SESSION_ENDING\", \"1\");")));
     QVERIFY(mainSource.contains(QStringLiteral("app.setProperty(\"latte_session_ending\", true);")));
+    QVERIFY(mainSource.contains(QStringLiteral("inline bool isPlasmaShutdownServiceActive();")));
     QVERIFY(mainSource.contains(QStringLiteral("auto disableSessionManagement = [](QSessionManager &sm)")));
     QVERIFY(mainSource.contains(QStringLiteral("QObject::connect(&app, &QGuiApplication::commitDataRequest")));
     QVERIFY(mainSource.contains(QStringLiteral("sm.setRestartHint(QSessionManager::RestartNever);")));
@@ -225,7 +226,6 @@ void SourceContractTest::sessionShutdownHandlingMatchesStableWaylandPath()
     QVERIFY(mainSource.contains(QStringLiteral("qunsetenv(\"LATTE_SESSION_ENDING\");")));
     QVERIFY(!mainSource.contains(QStringLiteral("flagSetTimer.hasExpired(5000)")));
     QVERIFY(!mainSource.contains(QStringLiteral("triggering quit() from poller")));
-    QVERIFY(!mainSource.contains(QStringLiteral("isPlasmaShutdownServiceActive()")));
     QVERIFY(!mainSource.contains(QStringLiteral("plasma-shutdown is active; quitting committed session logout")));
 
     const int sharedEngineDetach = mainSource.indexOf(QStringLiteral("s_sharedEngine->setParent(nullptr);"));
@@ -264,12 +264,13 @@ void SourceContractTest::sessionShutdownHandlingMatchesStableWaylandPath()
     QVERIFY(pollerBodyEnd > pollerBodyStart);
     const QString pollerBody = mainSource.mid(pollerBodyStart, pollerBodyEnd - pollerBodyStart);
     QVERIFY(pollerBody.contains(QStringLiteral("const bool hasBlockingWindows = corona.wm()->hasSessionBlockingWindows();")));
+    QVERIFY(pollerBody.contains(QStringLiteral("const bool shutdownServiceActive = isPlasmaShutdownServiceActive();")));
     QVERIFY(pollerBody.contains(QStringLiteral("sessionShutdownSawBlockingWindows = true;")));
     QVERIFY(pollerBody.contains(QStringLiteral("if (app.property(\"latte_session_ending\").toBool()")));
-    QVERIFY(pollerBody.contains(QStringLiteral("sessionShutdownSawBlockingWindows && !hasBlockingWindows")));
+    QVERIFY(pollerBody.contains(QStringLiteral("(sessionShutdownSawBlockingWindows || shutdownServiceActive) && !hasBlockingWindows")));
     QVERIFY(pollerBody.contains(QStringLiteral("app.quit();")));
-    QVERIFY(pollerBody.indexOf(QStringLiteral("sessionShutdownSawBlockingWindows && !hasBlockingWindows")) < pollerBody.indexOf(QStringLiteral("app.quit();")));
-    QVERIFY(!pollerBody.contains(QStringLiteral("isPlasmaShutdownServiceActive()")));
+    QVERIFY(pollerBody.indexOf(QStringLiteral("(sessionShutdownSawBlockingWindows || shutdownServiceActive) && !hasBlockingWindows")) < pollerBody.indexOf(QStringLiteral("app.quit();")));
+    QVERIFY(pollerBody.indexOf(QStringLiteral("!hasBlockingWindows")) < pollerBody.indexOf(QStringLiteral("app.quit();")));
 
     QFile abstractWmHeaderFile(QStringLiteral(LATTE_SOURCE_DIR "/app/wm/abstractwindowinterface.h"));
     QVERIFY(abstractWmHeaderFile.open(QFile::ReadOnly));

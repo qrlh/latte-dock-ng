@@ -29,7 +29,9 @@
 #include <QCommandLineParser>
 #include <QCommandLineOption>
 #include <QDBusConnection>
+#include <QDBusConnectionInterface>
 #include <QDBusMessage>
+#include <QDBusReply>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -66,6 +68,7 @@ inline void ensureUserLocalQmlImportPaths(int argc, char **argv);
 inline void ensureKnsCompatQmlImportPaths();
 inline void ensureKdeSessionEnvironment();
 inline bool isKdeSessionShuttingDown();
+inline bool isPlasmaShutdownServiceActive();
 inline void autoClearQmlCacheOnVersionChange();
 inline void configureQtQuickGraphicsPreference();
 
@@ -529,6 +532,7 @@ int main(int argc, char **argv)
         QObject::connect(&sessionShutdownPoll, &QTimer::timeout, [&app, &markSessionEnding, &corona, &sessionShutdownSawBlockingWindows]() {
             const bool shuttingDown = isKdeSessionShuttingDown();
             const bool hasBlockingWindows = corona.wm()->hasSessionBlockingWindows();
+            const bool shutdownServiceActive = isPlasmaShutdownServiceActive();
 
             if (shuttingDown && hasBlockingWindows) {
                 sessionShutdownSawBlockingWindows = true;
@@ -544,7 +548,7 @@ int main(int argc, char **argv)
                     return;
                 }
 
-                if (sessionShutdownSawBlockingWindows && !hasBlockingWindows) {
+                if ((sessionShutdownSawBlockingWindows || shutdownServiceActive) && !hasBlockingWindows) {
                     qInfo() << "[shutdown] session blocking windows closed; quitting.";
                     app.quit();
                     return;
@@ -820,6 +824,18 @@ inline bool isKdeSessionShuttingDown()
     return (reply.type() == QDBusMessage::ReplyMessage
             && !reply.arguments().isEmpty()
             && reply.arguments().first().toBool());
+}
+
+inline bool isPlasmaShutdownServiceActive()
+{
+    QDBusConnectionInterface *interface = QDBusConnection::sessionBus().interface();
+
+    if (!interface) {
+        return false;
+    }
+
+    const QDBusReply<bool> reply = interface->isServiceRegistered(QStringLiteral("org.kde.Shutdown"));
+    return reply.isValid() && reply.value();
 }
 
 //! POSIX signal handler for SIGTERM/SIGINT/SIGHUP.
