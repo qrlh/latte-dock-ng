@@ -20,6 +20,7 @@
 // Qt
 #include <QDebug>
 #include <QTimer>
+#include <algorithm>
 #include <QApplication>
 #include <QQuickView>
 // KDE
@@ -43,7 +44,6 @@ inline bool appIdMatches(const QString &windowAppId, const QString &requestedApp
     if (App::matchesSelfAppId(requestedAppId)) {
         return App::matchesSelfAppId(windowAppId);
     }
-
     return windowAppId == requestedAppId;
 }
 
@@ -58,27 +58,72 @@ QList<QRect> plasmaPanelGeometriesFromConfig()
     const KConfigGroup plasmaViewsGroup(shellConfig, QStringLiteral("PlasmaViews"));
     const QList<QScreen *> screens = qGuiApp->screens();
 
+    struct PanelInfo {
+        int lastScreen;
+        Plasma::Types::Location location;
+        int thickness;
+    };
+    QList<PanelInfo> panels;
+
     for (const QString &containmentId : containmentsGroup.groupList()) {
         const KConfigGroup containment = containmentsGroup.group(containmentId);
-
-        if (containment.readEntry("plugin") != QLatin1String("org.kde.panel")) {
-            continue;
-        }
+        if (containment.readEntry("plugin") != QLatin1String("org.kde.panel")) continue;
 
         const int screenIndex = containment.readEntry("lastScreen", -1);
-        if (screenIndex < 0 || screenIndex >= screens.count()) {
-            continue;
-        }
+        if (screenIndex < 0 || screenIndex >= screens.count()) continue;
 
         const KConfigGroup panelGroup = plasmaViewsGroup.group(QStringLiteral("Panel %1").arg(containmentId));
+        if (!panelGroup.exists() || !panelGroup.hasGroup(QStringLiteral("Defaults"))) continue;
+        if (!containment.hasGroup(QStringLiteral("Applets"))) continue;
+
         const KConfigGroup defaultsGroup = panelGroup.group(QStringLiteral("Defaults"));
         const int thickness = defaultsGroup.readEntry("thickness", 0);
+        if (thickness <= 0) continue;
 
-        const auto location = static_cast<Plasma::Types::Location>(containment.readEntry("location", int(Plasma::Types::Floating)));
-        const QRect geometry = Latte::ViewPart::screenEdgePanelGeometry(screens.at(screenIndex)->geometry(), location, thickness);
+        const auto location = static_cast<Plasma::Types::Location>(
+            containment.readEntry("location", int(Plasma::Types::Floating)));
 
-        if (geometry.isValid()) {
-            geometries << geometry;
+        panels.append({screenIndex, location, thickness});
+    }
+
+    if (panels.isEmpty()) return geometries;
+
+    // With a single panel, use the location heuristic (TopEdge→topmost
+    // screen etc.) because lastScreen is unreliable on multi-screen
+    // Wayland where Qt's screen ordering may not match reality.
+    // With multiple panels, lastScreen correctly distributes them
+    // across different screens.
+    const bool useLastScreen = (panels.size() > 1);
+
+    for (const auto &p : panels) {
+        const QScreen *scr = nullptr;
+        if (useLastScreen) {
+            scr = screens.at(p.lastScreen);
+        } else {
+            switch (p.location) {
+            case Plasma::Types::TopEdge:
+                scr = *std::min_element(screens.constBegin(), screens.constEnd(),
+                    [](const QScreen *a, const QScreen *b) { return a->geometry().top() < b->geometry().top(); });
+                break;
+            case Plasma::Types::BottomEdge:
+                scr = *std::max_element(screens.constBegin(), screens.constEnd(),
+                    [](auto *a, auto *b) { return a->geometry().bottom() < b->geometry().bottom(); });
+                break;
+            case Plasma::Types::LeftEdge:
+                scr = *std::min_element(screens.constBegin(), screens.constEnd(),
+                    [](auto *a, auto *b) { return a->geometry().left() < b->geometry().left(); });
+                break;
+            case Plasma::Types::RightEdge:
+                scr = *std::max_element(screens.constBegin(), screens.constEnd(),
+                    [](auto *a, auto *b) { return a->geometry().right() < b->geometry().right(); });
+                break;
+            default: break;
+            }
+        }
+
+        if (scr) {
+            const QRect g = Latte::ViewPart::screenEdgePanelGeometry(scr->geometry(), p.location, p.thickness);
+            if (g.isValid()) geometries << g;
         }
     }
 
@@ -802,17 +847,7 @@ QList<KWayland::Client::PlasmaWindow *> WaylandInterface::managedWindows() const
 
 QList<QRect> WaylandInterface::plasmaPanelGeometries()
 {
-    QList<QRect> geometries;
-
-    for (const WindowId &wid : std::as_const(m_plasmaIgnoredWindows)) {
-        const auto w = windowFor(wid);
-
-        if (isPlasmaPanel(w)) {
-            geometries << w->geometry();
-        }
-    }
-
-    return geometries.isEmpty() ? plasmaPanelGeometriesFromConfig() : geometries;
+    return plasmaPanelGeometriesFromConfig();
 }
 
 QIcon WaylandInterface::iconFor(WindowId wid)

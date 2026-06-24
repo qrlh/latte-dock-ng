@@ -541,17 +541,16 @@ void Positioner::immediateSyncGeometry()
                 //! paint out-of-screen
                 freeRegion = availableScreenRect;
             } else {
-                const bool respectExternalPanels = shouldRespectExternalPanelsForVerticalDock(static_cast<Types::Alignment>(m_view->alignment()),
-                                                                                              m_view->maxLength(),
-                                                                                              m_view->offset());
                 freeRegion = latteCorona->availableScreenRegionWithCriteria(fixedScreen, activityid, ignoreModes, ignoreEdges);
 
-                if (respectExternalPanels) {
+                // Intersect with external panel geometry so that Plasma
+                // panels are respected regardless of dock alignment or length.
+                {
                     const QList<QRect> panelGeometries = m_corona->wm()->plasmaPanelGeometries();
-                    const QRect externalPanelGeometry = panelGeometries.isEmpty()
-                            ? verticalDockExternalPanelGeometry(m_view->screen()->geometry(), m_view->screen()->availableGeometry())
-                            : verticalDockExternalPanelGeometry(m_view->screen()->geometry(), panelGeometries);
-                    freeRegion = freeRegion.intersected(externalPanelGeometry);
+                    if (!panelGeometries.isEmpty()) {
+                        freeRegion = freeRegion.intersected(
+                            verticalDockExternalPanelGeometry(m_view->screen()->geometry(), panelGeometries));
+                    }
                 }
             }
 

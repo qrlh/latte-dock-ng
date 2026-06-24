@@ -250,9 +250,10 @@ void ToolsUnitTest::verticalDockExternalPanelGeometryKeepsScreenThicknessAxis()
     QCOMPARE(Latte::ViewPart::verticalDockExternalPanelGeometry(screenGeometry, QRect(90, 0, 910, 800)),
              screenGeometry);
 
+    // Horizontal panels (top/bottom) + vertical panel (left edge) all reduce space.
     const QList<QRect> panels{QRect(0, 0, 1000, 40), QRect(0, 0, 90, 800), QRect(0, 760, 1000, 40)};
     QCOMPARE(Latte::ViewPart::verticalDockExternalPanelGeometry(screenGeometry, panels),
-             QRect(0, 40, 1000, 720));
+             QRect(90, 40, 910, 720));
 
     const QRect topPanelGeometry = Latte::ViewPart::screenEdgePanelGeometry(screenGeometry, Plasma::Types::TopEdge, 36);
     QCOMPARE(topPanelGeometry, QRect(0, 0, 1000, 36));

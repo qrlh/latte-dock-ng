@@ -137,16 +137,25 @@ inline QRect verticalDockExternalPanelGeometry(const QRect &screenGeometry, cons
         }
 
         const bool horizontalPanel = panelGeometry.width() > panelGeometry.height();
-        if (!horizontalPanel) {
-            continue;
-        }
 
-        if (panelGeometry.top() <= screenGeometry.top()) {
-            result.setTop(qMax(result.top(), panelGeometry.bottom() + 1));
-        }
+        if (horizontalPanel) {
+            // Horizontal panels (top/bottom edges) reduce available vertical space.
+            if (panelGeometry.top() <= screenGeometry.top()) {
+                result.setTop(qMax(result.top(), panelGeometry.bottom() + 1));
+            }
 
-        if (panelGeometry.bottom() >= screenGeometry.bottom()) {
-            result.setBottom(qMin(result.bottom(), panelGeometry.top() - 1));
+            if (panelGeometry.bottom() >= screenGeometry.bottom()) {
+                result.setBottom(qMin(result.bottom(), panelGeometry.top() - 1));
+            }
+        } else {
+            // Vertical panels (left/right edges) reduce available horizontal space.
+            if (panelGeometry.left() <= screenGeometry.left()) {
+                result.setLeft(qMax(result.left(), panelGeometry.right() + 1));
+            }
+
+            if (panelGeometry.right() >= screenGeometry.right()) {
+                result.setRight(qMin(result.right(), panelGeometry.left() - 1));
+            }
         }
     }
 
