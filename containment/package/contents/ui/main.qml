@@ -1345,11 +1345,12 @@ ContainmentItem {
                 } else if (root.scrollAction === LatteContainment.types.ScrollActivities) {
                     latteView.windowsTracker.switchToNextActivity();
                 } else if (root.scrollAction === LatteContainment.types.ScrollToggleMinimized) {
-                    if (!ctrlPressed) rootWheelActivateTask(true);
-                    else {
+                    if (!ctrlPressed) {
                         var lw = selectedWindowsTracker.lastActiveWindow;
                         if (lw.isValid && !lw.isMinimized && lw.isMaximized) lw.requestToggleMaximized();
                         else if (lw.isValid && !lw.isMinimized && !lw.isMaximized) lw.requestToggleMinimized();
+                    } else if (selectedWindowsTracker.lastActiveWindow.isMaximized) {
+                        selectedWindowsTracker.lastActiveWindow.requestToggleMaximized();
                     }
                 } else {
                     rootWheelActivateTask(true);
