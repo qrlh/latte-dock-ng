@@ -2,6 +2,18 @@
 
 All notable changes to Latte Dock NG are documented in this file.
 
+## [v1.2.13] - 2026-06-26
+
+### Fixed
+- Fixed KNS dialog compatibility QML overrides being written to Qt's global user QML path (`~/.local/lib*/qt6/qml/`), which could crash incompatible KDE applications like systemsettings on startup.
+- Fixed `uninstall.sh` to clean up KNS compat overrides from both old (global QML) and new (private) paths during uninstall.
+
+## [v1.2.12] - 2026-06-25
+
+### Fixed
+- Fixed widget hide/show synchronization across all screens during removal and undo.
+- Fixed Plasma panel overlap for vertical docks on multi-screen Wayland setups.
+
 ## [v1.2.11] - 2026-06-23
 
 ### Fixed
