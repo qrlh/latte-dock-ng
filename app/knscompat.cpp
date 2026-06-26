@@ -295,6 +295,8 @@ static QString resolvedSystemQmlBase()
 
 static QString userLocalQmlBase(const QString &systemQmlBase)
 {
+    Q_UNUSED(systemQmlBase);
+
     if (qEnvironmentVariableIsSet(kUserRootEnv)) {
         const QString configuredRoot = QDir::cleanPath(QString::fromLocal8Bit(qgetenv(kUserRootEnv)));
         if (!configuredRoot.isEmpty() && QDir::isAbsolutePath(configuredRoot)) {
@@ -302,17 +304,12 @@ static QString userLocalQmlBase(const QString &systemQmlBase)
         }
     }
 
-    const QString userLocalPrefix = QDir::homePath() + QStringLiteral("/.local");
-
-    if (systemQmlBase.startsWith(QStringLiteral("/usr/local/"))) {
-        return QDir::cleanPath(userLocalPrefix + QLatin1Char('/') + systemQmlBase.mid(11));
-    }
-
-    if (systemQmlBase.startsWith(QStringLiteral("/usr/"))) {
-        return QDir::cleanPath(userLocalPrefix + QLatin1Char('/') + systemQmlBase.mid(5));
-    }
-
-    return userLocalPrefix + QStringLiteral("/lib64/qt6/qml");
+    // Use a latte-dock-private directory to avoid polluting the Qt
+    // default user-local QML import path (~/.local/lib*/qt6/qml),
+    // which would be searched by ALL Qt applications and can crash
+    // incompatible consumers (e.g. systemsettings).
+    return QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)
+           + QStringLiteral("/latte-dock-ng/qml-kns-compat");
 }
 
 QString knsCompatUserQmlRoot()
@@ -477,6 +474,26 @@ void ensureKnsCompat()
     if (qEnvironmentVariableIntValue(kDisableCompatEnv) == 1) {
         qDebug() << "KnsCompat: disabled by" << kDisableCompatEnv;
         return;
+    }
+
+    // Clean up overrides from the old user-local Qt QML path (pre-1.2.x)
+    // that could crash other applications like systemsettings.
+    const QStringList oldBases = {
+        QDir::homePath() + QStringLiteral("/.local/lib64/qt6/qml"),
+        QDir::homePath() + QStringLiteral("/.local/lib/qt6/qml"),
+    };
+    for (const auto &oldBase : oldBases) {
+        const QStringList oldDirs = {
+            oldBase + QStringLiteral("/org/kde/kirigami/templates"),
+            oldBase + QStringLiteral("/org/kde/kirigami/controls"),
+            oldBase + QStringLiteral("/org/kde/newstuff"),
+        };
+        for (const auto &d : oldDirs) {
+            if (QFile::exists(d + QStringLiteral("/qmldir"))) {
+                qDebug() << "KnsCompat: removing old overrides from" << d;
+                QDir(d).removeRecursively();
+            }
+        }
     }
 
     const QString stampPath = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)

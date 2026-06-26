@@ -62,7 +62,8 @@ void KnsCompatUnitTest::isolateHomeAndData(QTemporaryDir &home, QTemporaryDir &d
 
 QString KnsCompatUnitTest::qmlRoot() const
 {
-    return QDir::homePath() + QStringLiteral("/.local/lib64/qt6/qml");
+    return QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)
+           + QStringLiteral("/latte-dock-ng/qml-kns-compat");
 }
 
 void KnsCompatUnitTest::createSystemQmlRoot(const QString &root) const
