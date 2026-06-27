@@ -265,7 +265,7 @@ PlasmaCore.ToolTipArea {
         // findDeepImplicitWidth may temporarily report the full container
         // width instead of the content's intrinsic size.
         if (w > 0 && target.metrics && target.metrics.maxIconSize > 0) {
-            w = Math.min(w, target.metrics.maxIconSize * 3);
+            w = Math.min(w, target.metrics.maxIconSize * 5);
         }
         target.externalAppletNaturalWidth = w;
         target.externalAppletNaturalHeight = h;
@@ -285,7 +285,7 @@ PlasmaCore.ToolTipArea {
         // Same cap as captureNaturalSize to avoid runaway values.
         var target = appletItem || findAppletItem();
         if (target && target.metrics && target.metrics.maxIconSize > 0) {
-            w = Math.min(w, target.metrics.maxIconSize * 3);
+            w = Math.min(w, target.metrics.maxIconSize * 5);
         }
         if (target && target.externalAppletDrawsAboveTasks
             && w > 0 && w !== target.externalAppletNaturalWidth) {
