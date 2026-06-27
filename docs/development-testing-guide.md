@@ -19,7 +19,9 @@ The current suite covers:
 - scheme color parsing
 - window-system helper logic
 - selected settings delegates and widgets
-- source-level UI/runtime regression contracts
+- 60+ source-level UI/runtime regression contracts covering widget-specific
+  special handling: digital clock sizing, systray guards, volume/appmenu
+  popups, separator/spacer behavior, drag-and-drop, and scroll/wheel actions
 - install, uninstall, Docker, and packaging contracts
 
 Test executables are intentionally marked `EXCLUDE_FROM_ALL` so normal application builds are not slowed by test-only targets.

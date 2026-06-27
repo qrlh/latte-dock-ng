@@ -2,6 +2,21 @@
 
 All notable changes to Latte Dock NG are documented in this file.
 
+## [Unreleased]
+
+### Fixed
+- Fixed digital clock widget overflowing past the dock edge and overlapping
+  neighboring icons when using long date formats.  The natural-width cap was
+  increased from 3× to 5× maxIconSize to accommodate formats like "Saturday,
+  June 27, 2026 10:30 AM".
+
+### Test
+- Added 60+ source contract regression tests covering widget-specific
+  special handling: digital clock sizing, middle-click close active window,
+  auto-pin on drag, scroll minimize/unmaximize, system tray guards, volume
+  and application menu popup sizing, clipboard/digital-clock error
+  suppression, applet insertion boundaries, and separator/spacer detection.
+
 ## [v1.2.15] - 2026-06-27
 
 ### Fixed
