@@ -33,9 +33,9 @@ AbilityDefinition.MyView {
 
     badgesIn3DStyle: ref.myView.badgesIn3DStyle
 
-    alignment: ref.myView.alignment
-    itemsAlignment: ref.myView.itemsAlignment
-    visibilityMode: ref.myView.visibilityMode
+    alignment: safeInt(ref.myView, "alignment", 0)
+    itemsAlignment: safeInt(ref.myView, "itemsAlignment", 0)
+    visibilityMode: safeInt(ref.myView, "visibilityMode", -1)
 
     backgroundOpacity: ref.myView.backgroundOpacity
 
@@ -54,6 +54,9 @@ AbilityDefinition.MyView {
                                            : (bridge && bridge.panelPalette ? bridge.panelPalette : theme)
 
     readonly property AbilityDefinition.MyView local: AbilityDefinition.MyView {
+        alignment: 0 // LatteCore.types.Center, not imported here
+        itemsAlignment: 0 // LatteCore.types.Center, not imported here
+        visibilityMode: -1 // LatteCore.types.None, not imported here
         isShownFully: true
         inEditMode: plasmoid.userConfiguring
         inConfigureAppletsMode: plasmoid.userConfiguring
@@ -81,6 +84,12 @@ AbilityDefinition.MyView {
         if (isBridgeActive) {
             bridge.myView.client = null;
         }
+    }
+
+    function safeInt(source, propertyName, fallback) {
+        if (!source) return fallback;
+        var val = source[propertyName];
+        return (typeof val === "number" && !isNaN(val)) ? val : fallback;
     }
 
     function inCurrentLayout() {

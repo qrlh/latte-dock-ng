@@ -67,6 +67,7 @@ private Q_SLOTS:
     void systemTrayAndPlasmoidActAsAppletInsertionBoundary();
     void separatorAndSpacerDetectionAndBehaviorInAppletItem();
     void separatorGuardsAcrossLayoutAndDragDropFiles();
+    void myViewClientIntPropertiesUseSafeIntGuardAgainstUndefined();
 };
 
 void SourceContractTest::plasmaVolumeBootstrapContractMovedToQmlSmokeTest()
@@ -1550,6 +1551,30 @@ void SourceContractTest::separatorGuardsAcrossLayoutAndDragDropFiles()
         const QString src = QString::fromUtf8(hiddenSpacer.readAll());
         QVERIFY(src.contains(QStringLiteral("if (isSeparator || !communicator.requires.lengthMarginsEnabled) {\n            return 0;")));
     }
+}
+
+void SourceContractTest::myViewClientIntPropertiesUseSafeIntGuardAgainstUndefined()
+{
+    QFile clientFile(QStringLiteral(LATTE_SOURCE_DIR "/declarativeimports/abilities/client/MyView.qml"));
+    QVERIFY(clientFile.open(QFile::ReadOnly));
+    const QString src = QString::fromUtf8(clientFile.readAll());
+
+    // The safeInt helper must exist to guard int property bindings against
+    // undefined values from the bridge host during initialization/transition.
+    QVERIFY(src.contains(QStringLiteral("function safeInt(source, propertyName, fallback)")));
+
+    // alignment, itemsAlignment, and visibilityMode must all use safeInt
+    // so that undefined values from the host (e.g. before plasmoid config
+    // is loaded) fall back to valid int defaults instead of emitting
+    // "Unable to assign [undefined] to int" warnings.
+    QVERIFY(src.contains(QStringLiteral("alignment: safeInt(ref.myView, \"alignment\", 0)")));
+    QVERIFY(src.contains(QStringLiteral("itemsAlignment: safeInt(ref.myView, \"itemsAlignment\", 0)")));
+    QVERIFY(src.contains(QStringLiteral("visibilityMode: safeInt(ref.myView, \"visibilityMode\", -1)")));
+
+    // The old unguarded binding pattern must not reappear.
+    QVERIFY(!src.contains(QStringLiteral("alignment: ref.myView.alignment")));
+    QVERIFY(!src.contains(QStringLiteral("itemsAlignment: ref.myView.itemsAlignment")));
+    QVERIFY(!src.contains(QStringLiteral("visibilityMode: ref.myView.visibilityMode")));
 }
 
 QTEST_MAIN(SourceContractTest)
