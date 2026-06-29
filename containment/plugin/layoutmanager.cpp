@@ -985,7 +985,7 @@ void LayoutManager::restore()
 
     if (applets.isEmpty()) {
         const bool initialWarmupRetries = (m_restoreRetryCount < 20);
-        const bool shouldRetry = (expectedAppletCount > 0) || initialWarmupRetries;
+        const bool shouldRetry = ((expectedAppletCount > 0) || initialWarmupRetries) && (m_restoreRetryCount < 60);
 
         if (shouldRetry && m_restoreRetryCount < 60) {
             ++m_restoreRetryCount;

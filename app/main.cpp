@@ -19,6 +19,10 @@
 // C
 #include <csignal>
 
+// POSIX
+#include <fcntl.h>
+#include <unistd.h>
+
 // C++
 #include <memory>
 
@@ -39,6 +43,7 @@
 #include <QLibraryInfo>
 #include <QLockFile>
 #include <QSessionManager>
+#include <QSocketNotifier>
 #include <QStandardPaths>
 #include <QTextStream>
 #include <QTimer>
@@ -291,23 +296,6 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    //! Follow Plasma 6 plasmashell's shutdown pattern exactly:
-    //!   1. KSignalHandler (signalfd) watches SIGTERM → calls app.quit()
-    //!   2. setQuitLockEnabled(false) — prevents KJob from blocking quit
-    //!   3. setQuitOnLastWindowClosed(false) — already set above
-    //!
-    //! Reference: plasma-workspace/shell/main.cpp (bug 470604)
-    //! plasmashell also sets AA_DisableSessionManager to opt out of the
-    //! legacy XSMP-based Qt session protocol on Wayland.
-    KSignalHandler::self()->watchSignal(SIGTERM);
-    KSignalHandler::self()->watchSignal(SIGINT);
-    KSignalHandler::self()->watchSignal(SIGHUP);
-
-    //! Prevent KJob and friends from locking quit() — same as plasmashell.
-    //! Without this, an in-flight KJob can silently suppress QCoreApplication::quit(),
-    //! causing latte-dock to stay alive and trigger the KSMServer "wait or cancel" dialog.
-    QCoreApplication::setQuitLockEnabled(false);
-
     auto markSessionEnding = [&app]() {
         if (!qEnvironmentVariableIsSet("LATTE_SESSION_ENDING")) {
             qputenv("LATTE_SESSION_ENDING", "1");
@@ -318,6 +306,65 @@ int main(int argc, char **argv)
             qInfo() << "[shutdown] session-ending flag set; fast teardown enabled.";
         }
     };
+
+    //! Follow Plasma 6 plasmashell's shutdown pattern exactly:
+    //!   1. KSignalHandler (signalfd) watches SIGTERM → calls app.quit()
+    //!   2. setQuitLockEnabled(false) — prevents KJob from blocking quit
+    //!   3. setQuitOnLastWindowClosed(false) — already set above
+    //!
+    //! Reference: plasma-workspace/shell/main.cpp (bug 470604)
+    //! plasmashell also sets AA_DisableSessionManager to opt out of the
+    //! legacy XSMP-based Qt session protocol on Wayland.
+    //!
+    //! SIGINT is excluded from KSignalHandler because it is handled by the
+    //! self-pipe fallback below, which is more reliable across platforms.
+    KSignalHandler::self()->watchSignal(SIGTERM);
+    KSignalHandler::self()->watchSignal(SIGHUP);
+
+    //! Prevent KJob and friends from locking quit() — same as plasmashell.
+    //! Without this, an in-flight KJob can silently suppress QCoreApplication::quit(),
+    //! causing latte-dock to stay alive and trigger the KSMServer "wait or cancel" dialog.
+    QCoreApplication::setQuitLockEnabled(false);
+
+    //! Self-pipe signal handler for SIGINT (Ctrl-C) as a reliable fallback
+    //! independent of KSignalHandler's signalfd mechanism.  On some platforms
+    //! signalfd-based delivery can silently miss signals, leaving the process
+    //! unkillable with Ctrl-C and resistant to SIGTERM from --replace.
+    //!
+    //! The self-pipe trick (pipe + QSocketNotifier) is the canonical pattern
+    //! for signal handling in event-loop applications and does not depend on
+    //! signalfd or sigprocmask behaviour.
+    static int sigPipe[2] = {-1, -1};
+    if (pipe(sigPipe) == 0) {
+        // Non-blocking write end so the signal handler cannot deadlock
+        // if the pipe buffer is full.
+        fcntl(sigPipe[0], F_SETFL, O_NONBLOCK | fcntl(sigPipe[0], F_GETFL));
+        fcntl(sigPipe[1], F_SETFL, O_NONBLOCK | fcntl(sigPipe[1], F_GETFL));
+
+        // Use sigaction (async-signal-safe) to install a handler that writes
+        // a byte to the pipe.  This runs in signal context so only
+        // async-signal-safe functions are used.
+        struct sigaction sa{};
+        sa.sa_handler = [](int) {
+            const char c = 1;
+            write(sigPipe[1], &c, 1);
+        };
+        sigemptyset(&sa.sa_mask);
+        sa.sa_flags = SA_RESTART;
+        sigaction(SIGINT, &sa, nullptr);
+
+        // QSocketNotifier translates the pipe byte into a Qt event that
+        // safely calls quit() from the main event loop.
+        auto *sigNotifier = new QSocketNotifier(sigPipe[0], QSocketNotifier::Read, &app);
+        QObject::connect(sigNotifier, &QSocketNotifier::activated, &app, [&app, &markSessionEnding](int) {
+            char c;
+            if (read(sigPipe[0], &c, 1) == 1) {
+                qInfo() << "[shutdown] SIGINT received via self-pipe → calling quit()";
+                markSessionEnding();
+                app.quit();
+            }
+        });
+    }
 
     //! Signal handler: the primary shutdown trigger (matches plasmashell).
     QObject::connect(KSignalHandler::self(), &KSignalHandler::signalReceived,
@@ -372,7 +419,10 @@ int main(int argc, char **argv)
 
         if (lockFile.getLockInfo(&pid, nullptr, nullptr)) {
             kill(static_cast<pid_t>(pid), SIGTERM);
-            timeout = -1;
+            // Wait up to 5 seconds for the old instance to release the lock.
+            // Avoids blocking forever if the old process cannot process SIGTERM
+            // (e.g. signalfd delivery failure).
+            timeout = 5000;
         }
     }
 
@@ -416,7 +466,16 @@ int main(int argc, char **argv)
         }
 
         if (!validaction) {
-            qInfo() << i18n("An instance is already running!, use --replace to restart Latte");
+            if (parser.isSet(QStringLiteral("replace")) || parser.isSet(QStringLiteral("import-full"))) {
+                qint64 pid{ -1};
+                if (lockFile.getLockInfo(&pid, nullptr, nullptr)) {
+                    qInfo() << i18n("Old instance (PID %1) did not exit in time. Try killing it manually.", pid);
+                } else {
+                    qInfo() << i18n("Failed to acquire lock. Another instance may be starting.");
+                }
+            } else {
+                qInfo() << i18n("An instance is already running!, use --replace to restart Latte");
+            }
         }
 
         return 0;
