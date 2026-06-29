@@ -1333,8 +1333,8 @@ ContainmentItem {
                     latteView.windowsTracker.switchToPreviousActivity();
                 } else if (root.scrollAction === LatteContainment.types.ScrollToggleMinimized) {
                     if (!ctrlPressed) rootWheelActivateTask(false);
-                    else if (!selectedWindowsTracker.lastActiveWindow.isMaximized)
-                        selectedWindowsTracker.lastActiveWindow.requestToggleMaximized();
+                    else if (!latteView.windowsTracker.allScreens.lastActiveWindow.isMaximized)
+                        latteView.windowsTracker.allScreens.lastActiveWindow.requestToggleMaximized();
                 } else {
                     rootWheelActivateTask(false);
                 }
@@ -1346,11 +1346,11 @@ ContainmentItem {
                     latteView.windowsTracker.switchToNextActivity();
                 } else if (root.scrollAction === LatteContainment.types.ScrollToggleMinimized) {
                     if (!ctrlPressed) {
-                        var lw = selectedWindowsTracker.lastActiveWindow;
+                        var lw = latteView.windowsTracker.allScreens.lastActiveWindow;
                         if (lw.isValid && !lw.isMinimized && lw.isMaximized) lw.requestToggleMaximized();
                         else if (lw.isValid && !lw.isMinimized && !lw.isMaximized) lw.requestToggleMinimized();
-                    } else if (selectedWindowsTracker.lastActiveWindow.isMaximized) {
-                        selectedWindowsTracker.lastActiveWindow.requestToggleMaximized();
+                    } else if (latteView.windowsTracker.allScreens.lastActiveWindow.isMaximized) {
+                        latteView.windowsTracker.allScreens.lastActiveWindow.requestToggleMaximized();
                     }
                 } else {
                     rootWheelActivateTask(true);

@@ -139,8 +139,8 @@ Loader {
                 } else if (root.scrollAction === LatteContainment.types.ScrollToggleMinimized) {
                     if (!ctrlPressed) {
                         tasksLoader.item.activateNextPrevTask(true);
-                    } else if (!selectedWindowsTracker.lastActiveWindow.isMaximized){
-                        selectedWindowsTracker.lastActiveWindow.requestToggleMaximized();
+                    } else if (!latteView.windowsTracker.allScreens.lastActiveWindow.isMaximized){
+                        latteView.windowsTracker.allScreens.lastActiveWindow.requestToggleMaximized();
                     }
                 } else if (tasksLoader.active) {
                     tasksLoader.item.activateNextPrevTask(true);
@@ -153,19 +153,19 @@ Loader {
                     latteView.windowsTracker.switchToNextActivity();
                 } else if (root.scrollAction === LatteContainment.types.ScrollToggleMinimized) {
                     if (!ctrlPressed) {
-                        if (selectedWindowsTracker.lastActiveWindow.isValid
-                                && !selectedWindowsTracker.lastActiveWindow.isMinimized
-                                && selectedWindowsTracker.lastActiveWindow.isMaximized){
+                        if (latteView.windowsTracker.allScreens.lastActiveWindow.isValid
+                                && !latteView.windowsTracker.allScreens.lastActiveWindow.isMinimized
+                                && latteView.windowsTracker.allScreens.lastActiveWindow.isMaximized){
                             //! maximized
-                            selectedWindowsTracker.lastActiveWindow.requestToggleMaximized();
-                        } else if (selectedWindowsTracker.lastActiveWindow.isValid
-                                   && !selectedWindowsTracker.lastActiveWindow.isMinimized
-                                   && !selectedWindowsTracker.lastActiveWindow.isMaximized) {
+                            latteView.windowsTracker.allScreens.lastActiveWindow.requestToggleMaximized();
+                        } else if (latteView.windowsTracker.allScreens.lastActiveWindow.isValid
+                                   && !latteView.windowsTracker.allScreens.lastActiveWindow.isMinimized
+                                   && !latteView.windowsTracker.allScreens.lastActiveWindow.isMaximized) {
                             //! normal
-                            selectedWindowsTracker.lastActiveWindow.requestToggleMinimized();
+                            latteView.windowsTracker.allScreens.lastActiveWindow.requestToggleMinimized();
                         }
-                    } else if (selectedWindowsTracker.lastActiveWindow.isMaximized) {
-                        selectedWindowsTracker.lastActiveWindow.requestToggleMaximized();
+                    } else if (latteView.windowsTracker.allScreens.lastActiveWindow.isMaximized) {
+                        latteView.windowsTracker.allScreens.lastActiveWindow.requestToggleMaximized();
                     }
                 } else if (tasksLoader.active) {
                     tasksLoader.item.activateNextPrevTask(false);
